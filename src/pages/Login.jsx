@@ -18,24 +18,24 @@ export default function Login() {
   }
 
   return (
-    <div className="login-bg min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8 gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex flex-col items-center mb-8 gap-3">
+          <div className="w-10 h-10 rounded-lg bg-slate-900 flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Cell Admin</h1>
-            <p className="text-sm text-slate-400 mt-1">Contest Site Control Panel</p>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Cell Admin</h1>
+            <p className="text-sm text-slate-500 mt-1">Contest Site Control Panel</p>
           </div>
         </div>
 
-        <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 shadow-2xl">
-          <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Admin Token
               </label>
               <input
@@ -44,12 +44,12 @@ export default function Login() {
                 onChange={e => { setToken(e.target.value); setError('') }}
                 placeholder="Enter your admin token"
                 required
-                className="w-full px-3.5 py-2.5 rounded-lg bg-white/[0.06] border border-white/[0.1] text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/60 transition-all"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:border-slate-400"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2.5">
+              <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2.5">
                 {error}
               </p>
             )}
@@ -57,14 +57,14 @@ export default function Login() {
             <button
               type="submit"
               disabled={!token}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-indigo-500/20"
+              className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm"
             >
               Sign In
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
+        <p className="text-center text-xs text-slate-400 mt-6">
           Cell Admin · Restricted Access
         </p>
       </div>

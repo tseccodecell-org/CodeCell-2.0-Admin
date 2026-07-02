@@ -58,8 +58,8 @@ const DEFAULT_STUBS = {
   },
 }
 
-const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-800 placeholder:text-slate-400'
-const selectCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-800 bg-white'
+const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 text-slate-800 placeholder:text-slate-400'
+const selectCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 text-slate-800 bg-white'
 
 const emptyProblem = {
   name: '', difficulty: 'Medium',
@@ -113,7 +113,7 @@ function Toolbar() {
 
 function RichTextArea({ value, onChange, rows = 5, placeholder }) {
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/15 transition-all">
+    <div className="border border-slate-200 rounded-lg overflow-hidden focus-within:border-slate-400">
       <Toolbar />
       <textarea value={value} onChange={onChange} rows={rows} placeholder={placeholder}
         className="w-full p-3 text-sm text-slate-800 font-mono resize-y focus:outline-none placeholder:text-slate-400 placeholder:font-sans" />
@@ -155,10 +155,10 @@ function TagInput({ tags, onChange }) {
     }
   }
   return (
-    <div className="flex flex-wrap gap-1.5 items-center border border-slate-200 rounded-lg px-3 py-2 min-h-10.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/15 transition-all">
+    <div className="flex flex-wrap gap-1.5 items-center border border-slate-200 rounded-lg px-3 py-2 min-h-10.5 focus-within:border-slate-400">
       {tags.map(t => (
-        <span key={t} className="flex items-center gap-1 bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-0.5 rounded">
-          {t}<button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-indigo-400 hover:text-indigo-700">×</button>
+        <span key={t} className="flex items-center gap-1 bg-slate-200 text-slate-700 text-xs font-medium px-2 py-0.5 rounded">
+          {t}<button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="text-slate-500 hover:text-slate-800">×</button>
         </span>
       ))}
       <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={addTag}
@@ -335,7 +335,7 @@ export default function ProblemEditor({ type }) {
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-              tab === t ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+              tab === t ? 'border-slate-900 text-slate-900 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
             }`}
           >{t}</button>
         ))}
@@ -436,7 +436,7 @@ export default function ProblemEditor({ type }) {
               </div>
             )}
             <div className="flex items-center justify-end gap-3">
-              <button type="button" className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 underline underline-offset-2">
+              <button type="button" className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 underline underline-offset-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                 Upload Zip
               </button>
@@ -493,7 +493,7 @@ export default function ProblemEditor({ type }) {
           <div className="max-w-4xl px-8 py-6 flex flex-col gap-5">
             <p className="text-sm text-slate-500 italic">
               You must use our <strong className="font-bold not-italic text-slate-700">Domain Specific Language</strong> (DSL) to generate code stubs that read test case data from standard input.{' '}
-              <span className="text-indigo-600 cursor-pointer hover:underline">Click here</span> to learn how to write DSL.
+              <span className="text-slate-600 cursor-pointer hover:underline">Click here</span> to learn how to write DSL.
             </p>
 
             <div className="flex gap-10">
@@ -505,7 +505,7 @@ export default function ProblemEditor({ type }) {
                   value={problem.dsl}
                   onChange={e => set('dsl', e.target.value)}
                   rows={5}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-mono resize-y"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 font-mono resize-y"
                   placeholder="Write your DSL here..."
                   spellCheck={false}
                 />
@@ -528,7 +528,7 @@ export default function ProblemEditor({ type }) {
                 <select
                   value={stubLang}
                   onChange={e => setStubLang(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-slate-200 rounded bg-white focus:outline-none focus:border-indigo-400 w-44"
+                  className="px-3 py-1.5 text-sm border border-slate-200 rounded bg-white focus:outline-none focus:border-slate-400 w-44"
                 >
                   {ALL_LANGUAGES.map(l => (
                     <option key={l.id} value={l.id}>{l.label}</option>
@@ -555,7 +555,7 @@ export default function ProblemEditor({ type }) {
         {tab === 'Languages' && (
           <div className="px-8 py-6 flex flex-col gap-4">
             <p className="text-sm text-slate-500 italic">
-              Refer to <span className="text-indigo-600 cursor-pointer hover:underline">environment page</span> for available languages and libraries.
+              Refer to <span className="text-slate-600 cursor-pointer hover:underline">environment page</span> for available languages and libraries.
             </p>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => set('languages', [])}
@@ -678,7 +678,7 @@ export default function ProblemEditor({ type }) {
 
             <SettingRow label="Precision Check"
               desc="There should be at max one number per line in output file and this can be a floating point value.">
-              <input className="px-3 py-1.5 text-sm border border-slate-200 rounded w-36 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all disabled:opacity-50"
+              <input className="px-3 py-1.5 text-sm border border-slate-200 rounded w-36 focus:outline-none focus:border-slate-400 disabled:opacity-50"
                 value={problem.precisionCheck}
                 onChange={e => set('precisionCheck', e.target.value)}
                 disabled={!problem.enablePrecisionCheck}
@@ -785,7 +785,7 @@ export default function ProblemEditor({ type }) {
             <FormRow label="Multiple Solutions" hint="Enable if more than one valid output exists">
               <div className="flex items-center gap-3">
                 <button type="button" onClick={() => set('multipleSolution', !problem.multipleSolution)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${problem.multipleSolution ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                  className={`relative w-11 h-6 rounded-full transition-colors ${problem.multipleSolution ? 'bg-slate-900' : 'bg-slate-200'}`}>
                   <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${problem.multipleSolution ? 'translate-x-5' : ''}`} />
                 </button>
                 <span className="text-sm text-slate-600">{problem.multipleSolution ? 'Enabled' : 'Disabled'}</span>
@@ -793,7 +793,7 @@ export default function ProblemEditor({ type }) {
             </FormRow>
             <FormRow label="Checker Code" hint="C++ program — exits 0 if correct, non-zero if wrong">
               <div className={!problem.multipleSolution ? 'opacity-40 pointer-events-none' : ''}>
-                <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/15 transition-all">
+                <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:border-slate-400">
                   <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border-b border-slate-700">
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
@@ -823,15 +823,15 @@ export default function ProblemEditor({ type }) {
           Preview Challenge
         </button>
         <button type="button" onClick={handleSave}
-          className="px-5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm shadow-indigo-500/20">
+          className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg">
           Save Problem
         </button>
       </div>
 
       {/* ── ADD TEST CASE MODAL ── */}
       {showTcModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-6 px-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-6 px-4 bg-black/40 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl border border-slate-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
               <h2 className="text-base font-bold text-slate-900">Add Test Case</h2>
               <button onClick={closeTcModal} className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
@@ -842,13 +842,13 @@ export default function ProblemEditor({ type }) {
               <div className="flex items-end gap-6 flex-wrap">
                 <div>
                   <label className="flex items-center text-sm font-medium text-slate-700 mb-1.5">Tag<TipIcon /></label>
-                  <input className="px-3 py-2 text-sm border border-slate-200 rounded w-36 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  <input className="px-3 py-2 text-sm border border-slate-200 rounded w-36 focus:outline-none focus:border-slate-400"
                     value={tcForm.tag} onChange={e => setTc('tag', e.target.value)} />
                 </div>
                 <div>
                   <label className="flex items-center text-sm font-medium text-slate-700 mb-1.5">Strength<TipIcon /></label>
                   <input type="number" min={0}
-                    className="px-3 py-2 text-sm border border-slate-200 rounded w-20 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-center"
+                    className="px-3 py-2 text-sm border border-slate-200 rounded w-20 focus:outline-none focus:border-slate-400 text-center"
                     value={tcForm.strength} onChange={e => setTc('strength', Number(e.target.value))} />
                 </div>
                 <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer pb-2">

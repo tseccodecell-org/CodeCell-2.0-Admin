@@ -11,7 +11,7 @@ const DIFF_COLORS = {
 
 const TABS = ['Details', 'Challenges', 'Moderators', 'Notifications', 'Signups', 'Statistics']
 
-const fieldCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white'
+const fieldCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white'
 
 function InfoIcon() {
   return (
@@ -114,7 +114,7 @@ export default function WeekDetail() {
         <div className="flex items-start justify-between mb-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{week.title}</h1>
-            <p className="text-sm text-indigo-500 mt-0.5 font-medium">cell-contest.com/{slug}</p>
+            <p className="text-sm text-slate-400 mt-0.5 font-mono">cell-contest.com/{slug}</p>
           </div>
           <div className="flex items-center gap-2.5">
             <div className="text-center px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
@@ -148,7 +148,7 @@ export default function WeekDetail() {
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-3 text-sm border-b-2 transition-all whitespace-nowrap ${
                 activeTab === tab
-                  ? 'border-indigo-600 text-indigo-700 font-semibold'
+                  ? 'border-slate-900 text-slate-900 font-semibold'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 font-medium'
               }`}
             >
@@ -184,7 +184,7 @@ export default function WeekDetail() {
               <FormRow label="Contest URL">
                 <div className="flex items-center gap-2.5 text-sm">
                   <span className="text-slate-600">cell-contest.com/{slug}</span>
-                  <button className="text-indigo-600 hover:text-indigo-700 text-xs font-semibold underline underline-offset-2">edit</button>
+                  <button className="text-slate-500 hover:text-slate-900 text-xs font-semibold underline underline-offset-2">edit</button>
                 </div>
               </FormRow>
 
@@ -241,7 +241,7 @@ export default function WeekDetail() {
             <div className="flex justify-end mt-4">
               <button
                 onClick={saveDetails}
-                className="px-5 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm shadow-indigo-500/20"
+                className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
               >
                 Save Changes
               </button>
@@ -276,7 +276,7 @@ export default function WeekDetail() {
                 <p className="text-sm font-semibold text-slate-600">No challenges yet</p>
                 <button
                   onClick={() => navigate(`/challenges/${week.id}/problems/new`)}
-                  className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                  className="text-sm font-semibold text-slate-600 hover:text-slate-900"
                 >
                   Add the first challenge →
                 </button>
@@ -306,7 +306,7 @@ export default function WeekDetail() {
                       <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
                         <td className="px-6 py-4 text-sm text-slate-500">{i + 1}.</td>
                         <td className="px-6 py-4">
-                          <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 text-left">
+                          <button className="text-sm font-semibold text-slate-700 hover:text-slate-900 text-left">
                             {p.name}
                           </button>
                         </td>
@@ -319,14 +319,14 @@ export default function WeekDetail() {
                           <input
                             type="number"
                             defaultValue={p.maxScore}
-                            className="w-20 px-2 py-1.5 text-sm border border-slate-200 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                            className="w-20 px-2 py-1.5 text-sm border border-slate-200 rounded-lg text-center focus:outline-none focus:border-slate-400"
                           />
                         </td>
                         <td className="px-6 py-4">
-                          <input type="checkbox" className="w-4 h-4 accent-indigo-600 cursor-pointer" />
+                          <input type="checkbox" className="w-4 h-4 accent-slate-900 cursor-pointer" />
                         </td>
                         <td className="px-6 py-4">
-                          <input type="checkbox" className="w-4 h-4 accent-indigo-600 cursor-pointer" defaultChecked={!!p.approach} />
+                          <input type="checkbox" className="w-4 h-4 accent-slate-900 cursor-pointer" defaultChecked={!!p.approach} />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-1">
@@ -365,7 +365,7 @@ export default function WeekDetail() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col gap-4">
               <div className="flex gap-2">
                 <input
-                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
                   placeholder="Enter username or email to add moderator..."
                   value={modInput}
                   onChange={e => setModInput(e.target.value)}
@@ -373,7 +373,7 @@ export default function WeekDetail() {
                 />
                 <button
                   onClick={addMod}
-                  className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
                 >
                   Add
                 </button>
@@ -383,7 +383,7 @@ export default function WeekDetail() {
                 {mods.map((m, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-700 shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0">
                         {m.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -425,7 +425,7 @@ export default function WeekDetail() {
                   <select
                     value={notif.recipients}
                     onChange={e => setNotif(n => ({ ...n, recipients: e.target.value }))}
-                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                    className="px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white"
                   >
                     <option value="all">All Contestants</option>
                     <option value="registered">Registered Only</option>
@@ -436,7 +436,7 @@ export default function WeekDetail() {
                 <div className="flex items-start gap-5">
                   <label className="w-24 shrink-0 pt-2 text-sm font-semibold text-slate-700">Subject</label>
                   <input
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
+                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white"
                     placeholder="Subject"
                     value={notif.subject}
                     onChange={e => setNotif(n => ({ ...n, subject: e.target.value }))}
@@ -447,7 +447,7 @@ export default function WeekDetail() {
                   <label className="w-24 shrink-0 pt-2 text-sm font-semibold text-slate-700">Message</label>
                   <textarea
                     rows={8}
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white resize-y"
+                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white resize-y"
                     value={notif.message}
                     onChange={e => setNotif(n => ({ ...n, message: e.target.value }))}
                   />

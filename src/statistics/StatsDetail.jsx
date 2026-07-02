@@ -278,7 +278,7 @@ const DIFF_BAR = { Easy: '#10b981', Medium: '#f59e0b', Hard: '#f43f5e' }
 
 function Avatar({ name, size = 'md' }) {
   const s = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'
-  const colors = ['bg-indigo-100 text-indigo-700', 'bg-violet-100 text-violet-700', 'bg-teal-100 text-teal-700', 'bg-amber-100 text-amber-700', 'bg-rose-100 text-rose-700', 'bg-sky-100 text-sky-700']
+  const colors = ['bg-slate-200 text-slate-700', 'bg-teal-100 text-teal-700', 'bg-amber-100 text-amber-700', 'bg-rose-100 text-rose-700', 'bg-sky-100 text-sky-700', 'bg-violet-100 text-violet-700']
   return (
     <div className={`${s} ${colors[name.charCodeAt(0) % colors.length]} rounded-full flex items-center justify-center font-bold shrink-0`}>
       {name[0].toUpperCase()}
@@ -296,7 +296,7 @@ function SearchBar({ value, onChange, placeholder = 'Search participant...' }) {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white transition-all"
+        className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-56 focus:outline-none focus:border-slate-400 bg-white"
       />
       {value && (
         <button onClick={() => onChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -322,8 +322,8 @@ function SubmissionModal({ submission, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-4 z-60 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+      <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
+      <div className="fixed inset-4 z-60 bg-white rounded-lg shadow-lg flex flex-col overflow-hidden border border-slate-200">
         {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0 bg-slate-50">
           <div className="flex items-center gap-4">
@@ -477,7 +477,7 @@ function ParticipantPanel({ participant, problems, submissions, onClose, onSubCl
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
       <div className="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl z-50 flex flex-col border-l border-slate-200">
 
         {/* Header */}
@@ -571,7 +571,7 @@ function ParticipantPanel({ participant, problems, submissions, onClose, onSubCl
                     if (v !== 'all' && n === 0) return null
                     return (
                       <button key={v} onClick={() => setVerdictFilter(v)}
-                        className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${verdictFilter === v ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                        className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${verdictFilter === v ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                         {v === 'all' ? 'All' : v}
                         <span className={`text-[10px] tabular-nums ${verdictFilter === v ? 'opacity-70' : 'text-slate-400'}`}>{n}</span>
                       </button>
@@ -588,7 +588,7 @@ function ParticipantPanel({ participant, problems, submissions, onClose, onSubCl
                 <div className="divide-y divide-slate-100 overflow-y-auto">
                   {visibleSubs.map(sub => (
                     <button key={sub.id} onClick={() => onSubClick(sub)}
-                      className="w-full px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-indigo-50/40 transition-colors text-left">
+                      className="w-full px-6 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors text-left">
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">{sub.problemLabel}</span>
                         <div className="min-w-0">
@@ -641,7 +641,7 @@ function Pagination({ total, page, setPage }) {
           else p = page - 2 + i
           return (
             <button key={p} onClick={() => setPage(p)}
-              className={`w-8 h-8 text-xs font-semibold rounded-lg transition-colors ${p === page ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
+              className={`w-8 h-8 text-xs font-semibold rounded-lg transition-colors ${p === page ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100 border border-slate-200'}`}>
               {p}
             </button>
           )
@@ -714,7 +714,7 @@ export default function StatsDetail() {
               <span className={`inline-flex items-center gap-1.5 font-semibold px-2 py-0.5 rounded-full ${
                 week.active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60' : 'bg-slate-100 text-slate-500'
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${week.active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${week.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                 {week.active ? 'Live' : 'Ended'}
               </span>
             </div>
@@ -734,7 +734,7 @@ export default function StatsDetail() {
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`px-5 py-3 text-sm border-b-2 transition-all whitespace-nowrap ${
                 activeTab === tab
-                  ? 'border-indigo-600 text-indigo-700 font-semibold'
+                  ? 'border-slate-900 text-slate-900 font-semibold'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 font-medium'
               }`}>
               {tab}
@@ -764,8 +764,8 @@ export default function StatsDetail() {
             <div className="flex flex-col gap-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Participants',  value: totalParticipants, color: 'text-indigo-600' },
-                  { label: 'Submissions',   value: totalSubmissions,  color: 'text-violet-600' },
+                  { label: 'Participants',  value: totalParticipants, color: 'text-slate-900' },
+                  { label: 'Submissions',   value: totalSubmissions,  color: 'text-slate-900' },
                   { label: 'Average Score', value: avgScore,          color: 'text-amber-600' },
                   { label: 'Full Solvers',  value: participants.filter(p => p.total === totalPossible).length, color: 'text-emerald-600' },
                 ].map(k => (
@@ -869,7 +869,7 @@ export default function StatsDetail() {
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-bold text-slate-900">Top Participants</h3>
-                  <button onClick={() => setActiveTab('Leaderboard')} className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">Full leaderboard →</button>
+                  <button onClick={() => setActiveTab('Leaderboard')} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Full leaderboard →</button>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {participants.slice(0, 5).map(p => (
@@ -879,7 +879,7 @@ export default function StatsDetail() {
                       </span>
                       <Avatar name={p.name} size="sm" />
                       <span className="text-sm font-semibold text-slate-800 flex-1">{p.name}</span>
-                      <span className="text-sm font-bold text-indigo-600 tabular-nums">{p.total} pts</span>
+                      <span className="text-sm font-bold text-slate-700 tabular-nums">{p.total} pts</span>
                     </div>
                   ))}
                 </div>
@@ -924,7 +924,7 @@ export default function StatsDetail() {
                         {filteredParticipants.map(p => {
                           const subCount = submissions.filter(s => s.participantId === p.id).length
                           return (
-                            <tr key={p.id} onClick={() => setSelectedParticipant(p)} className="hover:bg-indigo-50/30 cursor-pointer transition-colors group">
+                            <tr key={p.id} onClick={() => setSelectedParticipant(p)} className="hover:bg-slate-50 cursor-pointer transition-colors group">
                               <td className="px-4 py-3.5 text-center">
                                 <span className={`text-sm font-bold ${p.rank <= 3 ? 'text-amber-500' : 'text-slate-400'}`}>
                                   {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `#${p.rank}`}
@@ -934,7 +934,7 @@ export default function StatsDetail() {
                                 <div className="flex items-center gap-2.5">
                                   <Avatar name={p.name} size="sm" />
                                   <div>
-                                    <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors">{p.name}</p>
+                                    <p className="text-sm font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">{p.name}</p>
                                     <p className="text-xs text-slate-400">{p.country}</p>
                                   </div>
                                 </div>
@@ -951,7 +951,7 @@ export default function StatsDetail() {
                                 )
                               })}
                               <td className="px-4 py-3.5 text-center text-sm text-slate-500 tabular-nums">{subCount}</td>
-                              <td className="px-4 py-3.5 text-right"><span className="text-sm font-bold text-indigo-600 tabular-nums">{p.total}</span></td>
+                              <td className="px-4 py-3.5 text-right"><span className="text-sm font-bold text-slate-700 tabular-nums">{p.total}</span></td>
                               <td className="px-4 py-3.5 text-xs text-slate-400 tabular-nums">
                                 {p.lastSubmit ? new Date(p.lastSubmit).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}
                               </td>
@@ -1021,7 +1021,7 @@ export default function StatsDetail() {
                     <div key={ps.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                       {/* Header */}
                       <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-base font-bold text-indigo-700 shrink-0">{ps.label}</span>
+                        <span className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-base font-bold text-slate-700 shrink-0">{ps.label}</span>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-slate-900 truncate">{ps.name}</h3>
                         </div>
@@ -1104,7 +1104,7 @@ export default function StatsDetail() {
                               <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
                               <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
                                 <div className="bg-white border border-slate-200 shadow-lg rounded-lg px-3 py-2 text-xs">
-                                  <p className="font-semibold text-slate-700">{label}: <span className="text-indigo-600">{payload[0].value}</span> participants</p>
+                                  <p className="font-semibold text-slate-700">{label}: <span className="text-slate-900">{payload[0].value}</span> participants</p>
                                 </div>
                               ) : null} />
                               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={44} fill="#6366f1" />
@@ -1132,7 +1132,7 @@ export default function StatsDetail() {
                           <div className="bg-white border border-slate-200 shadow-lg rounded-xl px-4 py-3 text-sm">
                             <p className="font-bold text-slate-700">{label}</p>
                             <p className="text-xs text-slate-500 mt-1">{d?.ac} AC / {d?.total} submissions</p>
-                            <p className="text-xs font-semibold text-indigo-700 mt-0.5">{d?.rate}% success rate</p>
+                            <p className="text-xs font-semibold text-slate-700 mt-0.5">{d?.rate}% success rate</p>
                           </div>
                         )
                       }} />
@@ -1159,7 +1159,7 @@ export default function StatsDetail() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {['all','AC','WA','TLE','CE','RE'].map(v => (
                     <button key={v} onClick={() => handleSubFilter(v)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${subFilter===v?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${subFilter===v?'bg-slate-900 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                       {v==='all'?'All':v}
                     </button>
                   ))}
@@ -1182,7 +1182,7 @@ export default function StatsDetail() {
                           <td className="px-6 py-3.5">
                             <div className="flex items-center gap-2">
                               <Avatar name={sub.participantName} size="sm" />
-                              <span className="text-sm font-semibold text-slate-700 group-hover:text-indigo-700 transition-colors">{sub.participantName}</span>
+                              <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">{sub.participantName}</span>
                             </div>
                           </td>
                           <td className="px-6 py-3.5">

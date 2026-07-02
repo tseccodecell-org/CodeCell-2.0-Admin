@@ -71,9 +71,9 @@ export default function StatsList() {
         </div>
         <div className="flex items-center divide-x divide-slate-200">
           {[
-            { label: 'Contests',     value: weeks.length,                       color: 'text-indigo-600' },
+            { label: 'Contests',     value: weeks.length,                       color: 'text-slate-900' },
             { label: 'Active',       value: activeContests,                     color: 'text-emerald-600' },
-            { label: 'Participants', value: totalParticipants.toLocaleString(), color: 'text-violet-600' },
+            { label: 'Participants', value: totalParticipants.toLocaleString(), color: 'text-slate-900' },
             { label: 'Submissions',  value: totalSubmissions.toLocaleString(),  color: 'text-amber-600' },
           ].map(k => (
             <div key={k.label} className="flex items-baseline gap-1.5 px-5">
@@ -155,16 +155,16 @@ export default function StatsList() {
                   const maxPts = w.problems.reduce((sum, p) => sum + (p.maxScore || 100), 0) || 100
                   return (
                     <tr key={w.id} onClick={() => navigate(`/statistics/${w.id}`)}
-                      className="hover:bg-indigo-50/30 cursor-pointer transition-colors group">
+                      className="hover:bg-slate-50 cursor-pointer transition-colors group">
                       <td className="px-6 py-4">
-                        <p className="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors">{w.title}</p>
+                        <p className="text-sm font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">{w.title}</p>
                         {w.contestType === 'fixed' && <p className="text-xs text-slate-400 mt-0.5">{w.durationHours}h fixed</p>}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
                           w.active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60' : 'bg-slate-100 text-slate-500'
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${w.active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${w.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                           {w.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
@@ -175,13 +175,13 @@ export default function StatsList() {
                         {s.participants > 0 ? (
                           <div className="flex items-center gap-2">
                             <div className="flex-1 max-w-20 bg-slate-100 rounded-full h-1.5">
-                              <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${Math.min(100,(s.avgScore/maxPts)*100)}%` }} />
+                              <div className="bg-slate-700 h-1.5 rounded-full" style={{ width: `${Math.min(100,(s.avgScore/maxPts)*100)}%` }} />
                             </div>
                             <span className="text-sm font-semibold text-slate-700 tabular-nums">{s.avgScore}</span>
                           </div>
                         ) : <span className="text-sm text-slate-400">—</span>}
                       </td>
-                      <td className="px-6 py-4 text-sm font-bold text-indigo-600 tabular-nums">
+                      <td className="px-6 py-4 text-sm font-bold text-slate-700 tabular-nums">
                         {s.topScore > 0 ? s.topScore : '—'}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500 tabular-nums">

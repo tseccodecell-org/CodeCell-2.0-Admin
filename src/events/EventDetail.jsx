@@ -9,15 +9,15 @@ const DIFF_COLORS = {
 }
 
 const STATUS_META = {
-  upcoming: { label: 'Upcoming', dot: 'bg-slate-400', badge: 'bg-slate-100 text-slate-500', pulse: false },
-  live: { label: 'Live', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60', pulse: true },
-  ended: { label: 'Ended', dot: 'bg-rose-400', badge: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/60', pulse: false },
+  upcoming: { label: 'Upcoming', dot: 'bg-slate-400',    badge: 'bg-slate-100 text-slate-500' },
+  live:     { label: 'Live',     dot: 'bg-emerald-500',  badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60' },
+  ended:    { label: 'Ended',    dot: 'bg-rose-400',     badge: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/60' },
 }
 
 function ConfirmModal({ title, description, confirmLabel, danger = false, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm border border-slate-200">
         <div className="p-6 flex flex-col gap-3">
           <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1 ${danger ? 'bg-rose-50' : 'bg-amber-50'}`}>
             {danger ? (
@@ -35,11 +35,11 @@ function ConfirmModal({ title, description, confirmLabel, danger = false, onConf
         </div>
         <div className="flex gap-2 px-6 pb-6">
           <button onClick={onCancel}
-            className="flex-1 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+            className="flex-1 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">
             Cancel
           </button>
           <button onClick={onConfirm}
-            className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors ${
+            className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg ${
               danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
             }`}>
             {confirmLabel}
@@ -95,8 +95,8 @@ export default function EventDetail() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="h-16 bg-white border-b border-slate-200/80 flex items-center px-8 gap-2 shrink-0">
-        <Link to="/events" className="text-sm text-slate-400 hover:text-slate-700 transition-colors font-medium">
+      <div className="h-16 bg-white border-b border-slate-200 flex items-center px-8 gap-2 shrink-0">
+        <Link to="/events" className="text-sm text-slate-400 hover:text-slate-700 font-medium">
           Events
         </Link>
         <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +106,7 @@ export default function EventDetail() {
       </div>
 
       <div className="flex-1 p-8 flex flex-col gap-6">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-2.5">
             <h2 className="text-xl font-bold text-slate-900">{event.title}</h2>
             <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
@@ -123,24 +123,24 @@ export default function EventDetail() {
                 <span className="tabular-nums">{event.startTime} → {endTime()} · {event.durationHours}h</span>
               </span>
               <span className={`inline-flex items-center gap-1.5 font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot} ${meta.pulse ? 'animate-pulse' : ''}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
                 {meta.label}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
-            <div className="text-center px-5 py-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="text-center px-5 py-3 bg-slate-50 rounded-lg border border-slate-200">
               <p className="text-2xl font-bold text-slate-900 tabular-nums">{event.problems.length}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Problems</p>
             </div>
-            <div className="text-center px-5 py-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="text-center px-5 py-3 bg-slate-50 rounded-lg border border-slate-200">
               <p className="text-2xl font-bold text-slate-900 tabular-nums">{totalScore}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Total Score</p>
             </div>
             {status === 'upcoming' && (
               <button
                 onClick={askStart}
-                className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-sm shadow-emerald-500/20"
+                className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
               >
                 Start Contest
               </button>
@@ -148,7 +148,7 @@ export default function EventDetail() {
             {status === 'live' && (
               <button
                 onClick={askEnd}
-                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors shadow-sm shadow-rose-500/20"
+                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg"
               >
                 End Contest
               </button>
@@ -161,7 +161,7 @@ export default function EventDetail() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div>
               <h3 className="font-bold text-slate-900">Problems</h3>
@@ -169,7 +169,7 @@ export default function EventDetail() {
             </div>
             <button
               onClick={() => navigate(`/events/${event.id}/problems/new`)}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm shadow-indigo-500/20"
+              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -188,7 +188,7 @@ export default function EventDetail() {
               <p className="text-sm font-semibold text-slate-600">No problems yet</p>
               <button
                 onClick={() => navigate(`/events/${event.id}/problems/new`)}
-                className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                className="text-sm font-semibold text-slate-600 hover:text-slate-900"
               >
                 Add the first problem →
               </button>
@@ -196,7 +196,7 @@ export default function EventDetail() {
           ) : (
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200">
+                <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">#</th>
                   <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Problem Name</th>
                   <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Difficulty</th>
@@ -207,7 +207,7 @@ export default function EventDetail() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {event.problems.map((p, i) => (
-                  <tr key={p.id} className="hover:bg-indigo-50/20 transition-colors">
+                  <tr key={p.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4 text-sm font-bold text-slate-400 font-mono">{String.fromCharCode(65 + i)}</td>
                     <td className="px-6 py-4 font-semibold text-slate-800 text-sm">{p.name}</td>
                     <td className="px-6 py-4">
@@ -220,7 +220,7 @@ export default function EventDetail() {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => { if (confirm('Delete this problem?')) deleteEventProblem(event.id, p.id) }}
-                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
