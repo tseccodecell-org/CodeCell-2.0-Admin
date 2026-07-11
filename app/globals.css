@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.md-preview p { margin: 0.5rem 0; line-height: 1.6; }
+.md-preview h1, .md-preview h2, .md-preview h3 { font-weight: 700; margin: 0.75rem 0 0.4rem; }
+.md-preview h1 { font-size: 1.25rem; }
+.md-preview h2 { font-size: 1.1rem; }
+.md-preview h3 { font-size: 1rem; }
+.md-preview ul { list-style: disc; padding-left: 1.4rem; margin: 0.5rem 0; }
+.md-preview ol { list-style: decimal; padding-left: 1.4rem; margin: 0.5rem 0; }
+.md-preview li { margin: 0.2rem 0; }
+.md-preview strong { font-weight: 700; }
+.md-preview em { font-style: italic; }
+.md-preview a { color: #2563eb; text-decoration: underline; }
+.md-preview code { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.85em; font-family: ui-monospace, monospace; }
+.md-preview pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; overflow-x: auto; margin: 0.5rem 0; }
+.md-preview pre code { background: none; border: none; padding: 0; }
+.md-preview img { max-width: 100%; border-radius: 8px; margin: 0.5rem 0; }
+.md-preview blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75rem; color: #64748b; margin: 0.5rem 0; }
+.md-preview table { border-collapse: collapse; margin: 0.5rem 0; }
+.md-preview th, .md-preview td { border: 1px solid #e2e8f0; padding: 0.3rem 0.6rem; }
+.md-preview th { background: #f8fafc; font-weight: 600; }
