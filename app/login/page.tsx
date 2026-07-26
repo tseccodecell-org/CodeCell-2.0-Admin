@@ -5,17 +5,33 @@ import { useRouter } from 'next/navigation'
 import { TOKEN_KEY } from '@/lib/config'
 
 export default function Login() {
-  const [token, setToken] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
   const router = useRouter()
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (token === 'admin123') {
-      sessionStorage.setItem(TOKEN_KEY, token)
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ email, password }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(body.message || `Login failed (${res.status})`)
+        return
+      }
+      sessionStorage.setItem(TOKEN_KEY, email)
       router.replace('/challenges')
-    } else {
-      setError('Invalid admin token.')
+    } catch {
+      setError('Could not reach the server. Is the backend up?')
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -38,14 +54,30 @@ export default function Login() {
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                Admin Token
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError('') }}
+                placeholder="admin@tseccodecell.com"
+                required
+                autoComplete="username"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:border-slate-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                Password
               </label>
               <input
                 type="password"
-                value={token}
-                onChange={e => { setToken(e.target.value); setError('') }}
-                placeholder="Enter your admin token"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setError('') }}
+                placeholder="Enter your password"
                 required
+                autoComplete="current-password"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:border-slate-400"
               />
             </div>
@@ -58,16 +90,16 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={!token}
+              disabled={!email || !password || busy}
               className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-sm"
             >
-              Sign In
+              {busy ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          Cell Admin · Restricted Access
+          Cell Admin, restricted access
         </p>
       </div>
     </div>

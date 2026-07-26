@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -76,6 +76,45 @@ const emptyTcForm: TcFormData = { input: '', output: '', isSample: false }
 /* ── Small components ─────────────────────────────────── */
 function TipIcon() {
   return <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-300 text-slate-600 text-[9px] font-black cursor-help ml-1 leading-none select-none">?</span>
+}
+
+function LockIcon() {
+  return (
+    <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+    </svg>
+  )
+}
+
+interface ToastState {
+  message: string
+  kind: 'success' | 'error'
+}
+
+function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000)
+    return () => clearTimeout(t)
+  }, [toast, onClose])
+
+  const success = toast.kind === 'success'
+  return (
+    <div className="fixed bottom-20 right-8 z-50 animate-in fade-in slide-in-from-bottom-2">
+      <div className={`flex items-center gap-2.5 pl-4 pr-3 py-3 rounded-lg shadow-lg border text-sm font-medium ${
+        success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
+      }`}>
+        <svg className={`w-4 h-4 shrink-0 ${success ? 'text-emerald-500' : 'text-rose-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {success
+            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />}
+        </svg>
+        {toast.message}
+        <button onClick={onClose} className="ml-1 p-0.5 rounded hover:bg-black/5 transition-colors">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+    </div>
+  )
 }
 
 interface ToolbarActions {
@@ -344,12 +383,29 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
   const [tab, setTab] = useState<Tab>('Details')
   const [problem, setProblem] = useState<ProblemFormData>(emptyProblem)
   const [prefilled, setPrefilled] = useState(false)
+  const [savedId, setSavedId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const [showTcModal, setShowTcModal] = useState(false)
   const [tcForm, setTcForm] = useState<TcFormData>(emptyTcForm)
   const [editingTcId, setEditingTcId] = useState<string | number | null>(null) // null = adding a new one
   const [expandedLang, setExpandedLang] = useState<string | null>(null)
   const [langEdit, setLangEdit] = useState<LanguageSetting>({ timeLimit: 2, memLimit: 256 })
   const [langEditStub, setLangEditStub] = useState<CodeStub>({ head: '', body: '', tail: '' })
+
+  // test cases, languages and the checker all need a real problem id on the server,
+  // so those tabs stay locked until the details have been saved once
+  const effectiveId = isEdit ? problemId : savedId
+  const isCreated = Boolean(effectiveId)
+
+  // don't let a half-filled form disappear on an accidental reload / tab close
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
 
   // edit mode: once the weeks list has loaded, prefill the form from the
   // problem's stored fields + its testcases and language configs from the api
@@ -406,8 +462,27 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEdit, prefilled, existing])
 
-  const set = <K extends keyof ProblemFormData>(key: K, val: ProblemFormData[K]) => setProblem(p => ({ ...p, [key]: val }))
+  const set = <K extends keyof ProblemFormData>(key: K, val: ProblemFormData[K]) => {
+    setDirty(true)
+    setProblem(p => ({ ...p, [key]: val }))
+  }
   const setTc = <K extends keyof TcFormData>(key: K, val: TcFormData[K]) => setTcForm(f => ({ ...f, [key]: val }))
+
+  // pull the testcases back from the server after a save so local rows pick up their
+  // real db ids — without this a second save would post the same ones again as duplicates
+  async function refreshTestCases(pid: string) {
+    try {
+      const tcs = await getTestCases(pid) as any[]
+      setProblem(p => ({
+        ...p,
+        testCases: tcs.map(tc => ({
+          id: tc.id, input: tc.input, output: tc.expectedOutput, isSample: tc.isSample, existing: true,
+        })),
+      }))
+    } catch {
+      // keep whatever is on screen, the save itself already went through
+    }
+  }
 
   const slug = problem.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 
@@ -422,12 +497,15 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
     if (editingTcId != null) {
       const tc = problem.testCases.find(t => t.id === editingTcId)
       // testcases already in the db get updated through the api right away
-      if (tc?.existing) {
+      if (tc?.existing && effectiveId) {
         try {
-          await updateTestCase(problemId, editingTcId, tcForm)
+          await updateTestCase(effectiveId, editingTcId, tcForm)
+          setToast({ message: 'Test case updated', kind: 'success' })
         } catch {
           return // api alert already shown, keep the modal open
         }
+      } else {
+        setDirty(true)
       }
       setProblem(p => ({
         ...p,
@@ -436,6 +514,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
           : t),
       }))
     } else {
+      setDirty(true)
       setProblem(p => ({ ...p, testCases: [...p.testCases, { ...tcForm, id: Date.now() }] }))
     }
     setTcForm(emptyTcForm)
@@ -446,13 +525,16 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
   async function removeTestCase(id: string | number) {
     const tc = problem.testCases.find(t => t.id === id)
     // testcases already in the db get deleted through the api right away
-    if (tc?.existing) {
+    if (tc?.existing && effectiveId) {
       if (!confirm('Delete this testcase from the problem?')) return
       try {
-        await deleteTestCase(problemId, id)
+        await deleteTestCase(effectiveId, id)
+        setToast({ message: 'Test case deleted', kind: 'success' })
       } catch {
         return // api alert already shown
       }
+    } else {
+      setDirty(true)
     }
     setProblem(p => ({ ...p, testCases: p.testCases.filter(t => t.id !== id) }))
   }
@@ -481,16 +563,48 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
     return { time: s?.timeLimit ?? lang.defaultTime, mem: s?.memLimit ?? lang.defaultMem }
   }
 
-  async function handleSave() {
-    if (!problem.name.trim()) { alert('Problem name is required'); setTab('Details'); return }
+  // saving keeps you on the page — creating just unlocks the rest of the tabs.
+  // closeAfter is for the explicit "Save & Close" action
+  async function handleSave(closeAfter = false) {
+    if (!problem.name.trim()) {
+      setTab('Details')
+      setToast({ message: 'Give the problem a name before saving', kind: 'error' })
+      return
+    }
+    setSaving(true)
     try {
-      if (isEdit) await updateProblem(problemId, problem)
-      else if (type === 'week') await addProblem(parentId as string, problem)
-      else addEventProblem(parentId as number, problem)
-      router.push(backTo)
+      if (type === 'event') {
+        // events are still local mock data, there's no api to keep editing against
+        addEventProblem(parentId as number, problem)
+        router.push(backTo)
+        return
+      }
+
+      if (effectiveId) {
+        await updateProblem(effectiveId, problem)
+        await refreshTestCases(effectiveId)
+        setDirty(false)
+        setToast({ message: 'Changes saved', kind: 'success' })
+      } else {
+        const newId = await addProblem(parentId as string, problem)
+        setSavedId(newId)
+        await refreshTestCases(newId)
+        setDirty(false)
+        setToast({ message: 'Problem created. Test cases, languages and checker are unlocked.', kind: 'success' })
+        setTab('Test Cases')
+      }
+
+      if (closeAfter) router.push(backTo)
     } catch {
       // api alert already shown, stay on the page so nothing typed is lost
+    } finally {
+      setSaving(false)
     }
+  }
+
+  function handleLeave() {
+    if (dirty && !confirm('You have unsaved changes. Leave without saving?')) return
+    router.push(backTo)
   }
 
   function closeTcModal() { setShowTcModal(false); setTcForm(emptyTcForm); setEditingTcId(null) }
@@ -503,16 +617,34 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
         <Link href={backTo} className="text-sm text-slate-400 hover:text-slate-700 transition-colors">{parent.title}</Link>
         <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
         <span className="text-sm font-semibold text-slate-900">{problem.name || 'New Problem'}</span>
+        {!isCreated ? (
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Draft</span>
+        ) : dirty ? (
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Unsaved</span>
+        ) : (
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Saved</span>
+        )}
       </div>
 
       <div className="flex items-center border-b border-slate-200 px-8 bg-white shrink-0 overflow-x-auto">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
-              tab === t ? 'border-slate-900 text-slate-900 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
-            }`}
-          >{t}</button>
-        ))}
+        {TABS.map(t => {
+          const locked = !isCreated && t !== 'Details'
+          return (
+            <button key={t} onClick={() => { if (!locked) setTab(t) }} disabled={locked}
+              title={locked ? 'Save the problem details first to unlock this' : undefined}
+              className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                locked
+                  ? 'border-transparent text-slate-300 cursor-not-allowed'
+                  : tab === t
+                    ? 'border-slate-900 text-slate-900 font-semibold'
+                    : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'
+              }`}
+            >
+              {t}
+              {locked && <LockIcon />}
+            </button>
+          )
+        })}
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -520,7 +652,21 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
         {/* ── DETAILS ── */}
         {tab === 'Details' && (
           <div className="max-w-4xl px-8 py-2">
-            <p className="text-sm text-slate-400 italic py-4 border-b border-slate-100">This is the basic information that describes your challenge.</p>
+            {isCreated ? (
+              <p className="text-sm text-slate-400 italic py-4 border-b border-slate-100">This is the basic information that describes your challenge.</p>
+            ) : (
+              <div className="flex items-start gap-3 my-4 px-4 py-3 bg-sky-50 border border-sky-200 rounded-lg">
+                <svg className="w-5 h-5 shrink-0 text-sky-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-sky-900">Step 1 of 4 &mdash; problem details</p>
+                  <p className="text-xs text-sky-700 mt-0.5 leading-relaxed">
+                    Save these details to create the problem. Test cases, languages and the custom checker unlock straight after, and you stay on this page.
+                  </p>
+                </div>
+              </div>
+            )}
             <FormRow label="Challenge Difficulty">
               <select className={`${selectCls} w-48`} value={problem.difficulty} onChange={e => set('difficulty', e.target.value)}>
                 <option>Easy</option><option>Medium</option><option>Hard</option>
@@ -640,8 +786,8 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                     const isSelected = problem.languages.includes(lang.id)
                     const isExpanded = expandedLang === lang.id
                     return (
-                      <>
-                        <tr key={lang.id} className={`border-b border-slate-100 ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'} transition-colors`}>
+                      <Fragment key={lang.id}>
+                        <tr className={`border-b border-slate-100 ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'} transition-colors`}>
                           <td className="px-4 py-3">
                             <input type="checkbox" checked={isSelected} onChange={() => toggleLang(lang.id)}
                               className="w-4 h-4 accent-emerald-600 cursor-pointer" />
@@ -672,7 +818,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                           </td>
                         </tr>
                         {isExpanded && (
-                          <tr key={lang.id + '_edit'} className="border-b border-slate-200">
+                          <tr className="border-b border-slate-200">
                             <td colSpan={5} className="px-6 py-5 bg-slate-50/70">
                               <div className="flex flex-col gap-5 max-w-2xl">
                                 <div className="grid grid-cols-2 gap-8">
@@ -712,7 +858,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     )
                   })}
                 </tbody>
@@ -757,16 +903,32 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="sticky bottom-0 z-10 bg-white border-t border-slate-200 flex items-center justify-end gap-3 px-8 py-3 shrink-0">
-        <button type="button" onClick={() => router.push(backTo)}
-          className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-          Cancel
-        </button>
-        <button type="button" onClick={handleSave}
-          className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg">
-          {isEdit ? 'Save Changes' : 'Save Problem'}
-        </button>
+      <div className="sticky bottom-0 z-10 bg-white border-t border-slate-200 flex items-center justify-between gap-3 px-8 py-3 shrink-0">
+        <p className="text-xs text-slate-400">
+          {saving ? 'Saving…'
+            : !isCreated ? 'Not created yet'
+            : dirty ? 'You have unsaved changes'
+            : 'All changes saved'}
+        </p>
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={handleLeave} disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50">
+            Cancel
+          </button>
+          {isCreated && (
+            <button type="button" onClick={() => handleSave(true)} disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50">
+              Save &amp; Close
+            </button>
+          )}
+          <button type="button" onClick={() => handleSave()} disabled={saving}
+            className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            {saving ? 'Saving…' : isCreated ? 'Save Changes' : 'Create Problem'}
+          </button>
+        </div>
       </div>
+
+      {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       {/* ── ADD TEST CASE MODAL ── */}
       {showTcModal && (

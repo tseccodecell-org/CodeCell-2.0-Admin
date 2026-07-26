@@ -47,7 +47,7 @@ function formatMemory(kb?: number | null) {
 const fieldCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white'
 
 interface TestResultRow {
-  index: number
+  orderNum: number
   verdict: string
   timeMs?: number | null
   memoryKb?: number | null
@@ -268,8 +268,8 @@ export default function ProblemTest() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {submission.testResults.map(tc => (
-                      <tr key={tc.index}>
-                        <td className="px-4 py-2.5 text-slate-500 tabular-nums">TC {tc.index + 1}</td>
+                      <tr key={tc.orderNum}>
+                        <td className="px-4 py-2.5 text-slate-500 tabular-nums">TC {tc.orderNum + 1}</td>
                         <td className="px-4 py-2.5"><VerdictBadge verdict={tc.verdict} /></td>
                         <td className="px-4 py-2.5 text-slate-600 tabular-nums">{tc.timeMs != null ? `${tc.timeMs} ms` : '—'}</td>
                         <td className="px-4 py-2.5 text-slate-600 tabular-nums">{formatMemory(tc.memoryKb)}</td>

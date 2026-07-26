@@ -193,6 +193,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await syncChecker(problemId, problem)
 
     refreshWeeks()
+    return problemId
   }
 
   // checker registry goes through the go admin api, which proxies to the judge

@@ -124,7 +124,7 @@ export interface DataContextValue {
   updateWeek: (id: string, data: WeekFormInput) => Promise<void>
   deleteWeek: (id: string) => Promise<void>
 
-  addProblem: (weekId: string, problem: ProblemFormData) => Promise<void>
+  addProblem: (weekId: string, problem: ProblemFormData) => Promise<string>
   deleteProblem: (weekId: string, problemId: string | number) => Promise<void>
   updateProblem: (problemId: string, problem: ProblemFormData) => Promise<void>
 
