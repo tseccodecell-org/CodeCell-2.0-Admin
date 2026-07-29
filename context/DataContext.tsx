@@ -25,16 +25,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // events api isn't built yet (Sanket's), so events stay mock for now
   const [events, setEvents] = useState<EventItem[]>(initialEvents)
 
-  // small fetch helper for the {success, data} / {success, error} envelope
+  // small fetch helper for the {success, data} / {success, error} envelope.
+  // the admin token is an HttpOnly cookie, so every call must carry credentials
   async function api(method: string, url: string, body?: unknown) {
     const res = await fetch(`${GO_API}${url}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include',
     })
+
+    if (res.status === 401 || res.status === 403) {
+      window.location.href = '/login'
+      throw new Error('admin session expired')
+    }
+
     const data = await res.json().catch(() => ({}))
     if (!res.ok || data.success === false) {
-      alert(`${method} ${url} failed: ${data.error?.message || res.status}`)
+      // the auth middlewares answer with a bare {"error": "..."} string,
+      // everything else uses the {success, error: {message}} envelope
+      const message =
+        data.error?.message ||
+        (typeof data.error === 'string' ? data.error : null) ||
+        res.status
+      alert(`${method} ${url} failed: ${message}`)
       throw new Error(`${method} ${url} failed`)
     }
     return data
@@ -49,7 +63,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const withProblems: Week[] = await Promise.all((body.data || []).map(async (w: any) => {
         let problems: Problem[] = []
         try {
-          const res = await fetch(`${GO_API}/weeks/${w.id}/problems`)
+          const res = await fetch(`${GO_API}/weeks/${w.id}/problems`, { credentials: 'include' })
           const list = await res.json()
           problems = (list || []).map((p: any) => ({
             id: p.id,

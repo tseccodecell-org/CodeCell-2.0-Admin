@@ -226,7 +226,7 @@ function RichTextArea({ value, onChange, rows = 5, placeholder }: RichTextAreaPr
     try {
       const fd = new FormData()
       fd.append('image', file)
-      const res = await fetch('/api/admin/uploads', { method: 'POST', body: fd })
+      const res = await fetch('/api/admin/uploads', { method: 'POST', body: fd, credentials: 'include' })
       const body = await res.json().catch(() => ({}))
       if (!res.ok || body.success === false) throw new Error(body.error?.message || res.status)
       const [start] = selection()

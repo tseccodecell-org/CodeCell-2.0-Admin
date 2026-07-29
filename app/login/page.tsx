@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { TOKEN_KEY } from '@/lib/config'
+import { adminLogin } from '@/lib/auth'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -16,20 +16,14 @@ export default function Login() {
     setBusy(true)
     setError('')
     try {
-      const res = await fetch('/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ email, password }),
-      })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(body.message || `Login failed (${res.status})`)
-        return
-      }
-      sessionStorage.setItem(TOKEN_KEY, email)
+      await adminLogin(email, password)
       router.replace('/challenges')
-    } catch {
-      setError('Could not reach the server. Is the backend up?')
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Could not reach the server. Is the backend up?'
+      )
     } finally {
       setBusy(false)
     }

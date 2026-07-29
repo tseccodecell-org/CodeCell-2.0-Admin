@@ -100,7 +100,7 @@ export default function ProblemTest() {
     pollRef.current = setInterval(async () => {
       tries++
       try {
-        const res = await fetch(url)
+        const res = await fetch(url, { credentials: 'include' })
         const body = await res.json()
         if (!body.success) return
         onData(body.data)
@@ -125,6 +125,7 @@ export default function ProblemTest() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language, sourceCode: code, stdin }),
+        credentials: 'include',
       })
       const body = await res.json()
       if (!body.success) throw new Error(body.error?.message || res.status)
@@ -146,6 +147,7 @@ export default function ProblemTest() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: 1, problemId, language, code }),
+        credentials: 'include',
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()

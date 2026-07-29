@@ -2,22 +2,33 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { TOKEN_KEY } from '@/lib/config'
+import { verifyAdminSession } from '@/lib/auth'
 
-// client-only auth check (token lives in sessionStorage) — same behavior as
-// the old react-router Guard: render children once verified, else redirect
+// the admin token is an HttpOnly cookie, so the only honest way to know whether
+// we are signed in is to ask the backend
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const [ok, setOk] = useState(false)
+  const [state, setState] = useState<'checking' | 'ok'>('checking')
 
   useEffect(() => {
-    if (sessionStorage.getItem(TOKEN_KEY)) {
-      setOk(true)
-    } else {
-      router.replace('/login')
-    }
+    let cancelled = false
+
+    verifyAdminSession().then(valid => {
+      if (cancelled) return
+      if (valid) setState('ok')
+      else router.replace('/login')
+    })
+
+    return () => { cancelled = true }
   }, [router])
 
-  if (!ok) return null
+  if (state === 'checking') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-sm text-slate-400">Checking your session…</p>
+      </div>
+    )
+  }
+
   return <>{children}</>
 }

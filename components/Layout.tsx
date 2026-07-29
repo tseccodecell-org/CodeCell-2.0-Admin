@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { TOKEN_KEY } from '@/lib/config'
+import { adminLogout } from '@/lib/auth'
 
 const navSections = [
   {
@@ -48,8 +48,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  function logout() {
-    sessionStorage.removeItem(TOKEN_KEY)
+  async function logout() {
+    await adminLogout()
     router.replace('/login')
   }
 
