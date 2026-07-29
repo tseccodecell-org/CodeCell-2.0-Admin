@@ -68,13 +68,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const body = await api('GET', '/api/admin/weeks')
 
       // the list api gives {id,title,weekNumber,active,problemCount};
-      // problems come from the public weeks api per week
+      // the problems for each week come from the admin route below
       const withProblems: Week[] = await Promise.all((body.data || []).map(async (w: any) => {
         let problems: Problem[] = []
         try {
-          const res = await fetch(`${GO_API}/weeks/${w.id}/problems`, { credentials: 'include' })
-          const list = await res.json()
-          problems = (list || []).map((p: any) => ({
+          // the public /weeks/:id/problems needs a user jwt, which an admin does
+          // not have. use the admin route so unpublished problems show up too
+          const res = await fetch(`${GO_API}/api/admin/weeks/${w.id}/problems`, {
+            credentials: 'include',
+          })
+          const payload = await res.json().catch(() => ({}))
+          if (!res.ok || payload.success === false) {
+            console.error(
+              `could not load problems for week ${w.id}:`,
+              res.status,
+              payload.error?.message || payload.error || ''
+            )
+          }
+          const list = payload.data
+          problems = (Array.isArray(list) ? list : []).map((p: any) => ({
             id: p.id,
             name: p.title,
             difficulty: DIFF_PRETTY[p.difficulty] || p.difficulty,
@@ -87,8 +99,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             constraints: p.constraints || '',
             multipleSolution: p.checker_type === 'dynamic',
           }))
-        } catch {
-          // week just shows 0 problems
+        } catch (e) {
+          console.error(`problems request failed for week ${w.id}`, e)
         }
         const startsAt = w.startTime ? new Date(w.startTime) : null
         const endsAt = w.endTime ? new Date(w.endTime) : null
