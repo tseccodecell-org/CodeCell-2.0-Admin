@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import { initialEvents } from '@/lib/mockData'
 import type {
   CheckerInfo, DataContextValue, EventItem, LanguageConfig,
@@ -11,6 +12,8 @@ const DataContext = createContext<DataContextValue | undefined>(undefined)
 
 // requests go through the next.config.ts rewrites to the go backend (:8000)
 const GO_API = ''
+
+const LOGIN_PATH = '/login'
 
 const DIFF_PRETTY: Record<string, string> = { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' }
 
@@ -24,6 +27,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [weeks, setWeeks] = useState<Week[]>([])
   // events api isn't built yet (Sanket's), so events stay mock for now
   const [events, setEvents] = useState<EventItem[]>(initialEvents)
+  const pathname = usePathname()
+  const loadedRef = useRef(false)
 
   // small fetch helper for the {success, data} / {success, error} envelope.
   // the admin token is an HttpOnly cookie, so every call must carry credentials
@@ -35,8 +40,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       credentials: 'include',
     })
 
+    // never bounce while already on the login screen, that turns a rejected
+    // request into a reload loop
     if (res.status === 401 || res.status === 403) {
-      window.location.href = '/login'
+      if (window.location.pathname !== LOGIN_PATH) {
+        window.location.replace(LOGIN_PATH)
+      }
       throw new Error('admin session expired')
     }
 
@@ -107,12 +116,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // this provider sits in the root layout, so it is mounted on the login screen
+  // too. loading admin data there would 401 and fight the redirect, so hold off
+  // until we are on a real page, and load once per signed in session.
   useEffect(() => {
-    // initial load from the backend (async, so state updates land after fetch)
+    if (pathname === LOGIN_PATH) {
+      loadedRef.current = false
+      return
+    }
+    if (loadedRef.current) return
+    loadedRef.current = true
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshWeeks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [pathname])
 
   // ── Weeks ──────────────────────────────────────────────
 
