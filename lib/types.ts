@@ -32,6 +32,7 @@ export interface Problem {
   outputFormat: string
   constraints: string
   multipleSolution: boolean
+  editorial?: string
   description?: string
   timeLimit?: number
   testCases?: TestCase[]
@@ -55,6 +56,7 @@ export interface ProblemFormData {
   codeStubs: Record<string, CodeStub>
   basePoints: number
   multipleSolution: boolean
+  editorial: string
   validatorCode: string
 }
 

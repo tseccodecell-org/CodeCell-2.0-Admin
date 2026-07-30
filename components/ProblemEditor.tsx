@@ -62,7 +62,7 @@ const emptyProblem: ProblemFormData = {
   languageSettings: {},
   codeStubs: {},
   basePoints: 100,
-  multipleSolution: false, validatorCode: '',
+  multipleSolution: false, editorial: '', validatorCode: '',
 }
 
 interface TcFormData {
@@ -452,6 +452,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
         outputFormat: current.outputFormat,
         constraints: current.constraints,
         basePoints: current.basePoints,
+        editorial: current.editorial || '',
         multipleSolution: current.multipleSolution,
         validatorCode,
         testCases, languages, languageSettings, codeStubs,
@@ -672,6 +673,12 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                 <option>Easy</option><option>Medium</option><option>Hard</option>
               </select>
             </FormRow>
+            <FormRow label="Base Points" hint="What the problem is worth before scoring adjusts for solve rate and time elapsed">
+              <div className="w-32">
+                <input type="number" min={1} className={inputCls} value={problem.basePoints}
+                  onChange={e => set('basePoints', Number(e.target.value))} />
+              </div>
+            </FormRow>
             <FormRow label="Challenge Name">
               <input className={inputCls} value={problem.name} onChange={e => set('name', e.target.value)} placeholder="Enter challenge name" />
             </FormRow>
@@ -701,6 +708,9 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
             </FormRow>
             <FormRow label="Output Format">
               <RichTextArea value={problem.outputFormat} onChange={e => set('outputFormat', e.target.value)} rows={4} placeholder="Describe the output format..." />
+            </FormRow>
+            <FormRow label="Editorial" hint="Hidden from contestants until the week ends, then shown on the problem page">
+              <RichTextArea value={problem.editorial} onChange={e => set('editorial', e.target.value)} rows={8} placeholder="Explain the intended approach. Leave empty if there is no editorial yet." />
             </FormRow>
           </div>
         )}

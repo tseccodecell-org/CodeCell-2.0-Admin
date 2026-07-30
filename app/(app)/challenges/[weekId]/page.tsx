@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useData } from '@/context/DataContext'
 import Countdown from '@/components/Countdown'
-import type { Problem } from '@/lib/types'
 
 const DIFF_COLORS: Record<string, string> = {
   Easy: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
@@ -315,17 +314,17 @@ export default function WeekDetail() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <input
-                            type="number"
-                            defaultValue={p.basePoints}
-                            className="w-20 px-2 py-1.5 text-sm border border-slate-200 rounded-lg text-center focus:outline-none focus:border-slate-400"
-                          />
+                          <span className="text-sm text-slate-700">{p.basePoints}</span>
                         </td>
                         <td className="px-6 py-4">
                           <input type="checkbox" className="w-4 h-4 accent-slate-900 cursor-pointer" />
                         </td>
                         <td className="px-6 py-4">
-                          <input type="checkbox" className="w-4 h-4 accent-slate-900 cursor-pointer" defaultChecked={!!(p as Problem & { approach?: unknown }).approach} />
+                          {p.editorial ? (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700">Written</span>
+                          ) : (
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">Missing</span>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-1">

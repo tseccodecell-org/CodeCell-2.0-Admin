@@ -98,6 +98,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             outputFormat: p.output_format || '',
             constraints: p.constraints || '',
             multipleSolution: p.checker_type === 'dynamic',
+            editorial: p.editorial || '',
           }))
         } catch (e) {
           console.error(`problems request failed for week ${w.id}`, e)
@@ -208,6 +209,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       constraints: problem.constraints,
       basePoints: Number(problem.basePoints) || 100,
       multipleSolution: !!problem.multipleSolution,
+      editorial: problem.editorial || '',
     })
     const problemId = created.data.problemId
 
@@ -276,6 +278,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       constraints: problem.constraints,
       basePoints: Number(problem.basePoints) || 100,
       multipleSolution: !!problem.multipleSolution,
+      editorial: problem.editorial || '',
     })
 
     for (const tc of problem.testCases.filter(t => !t.existing)) {
