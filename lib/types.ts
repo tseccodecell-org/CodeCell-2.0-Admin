@@ -73,8 +73,6 @@ export interface Week {
   endDate: string
   endTime: string
   displaySection: string
-  contestType?: string
-  durationHours?: number
 }
 
 export interface EventItem {
@@ -108,9 +106,6 @@ export type WeekFormInput = Partial<Week> & {
   title?: string
   startDate?: string
   startTime?: string
-  contestType?: string
-  scoringSystem?: string
-  durationHours?: number | string
   active?: boolean
   displaySection?: string
   endDate?: string

@@ -151,17 +151,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const start = data.startDate
       ? new Date(`${data.startDate}T${data.startTime || '10:00'}:00`)
       : new Date()
-    const hours = data.contestType === 'fixed' ? Number(data.durationHours || 3) : 24 * 7
-    const end = new Date(start.getTime() + hours * 3600 * 1000)
+    const end = data.endDate
+      ? new Date(`${data.endDate}T${data.endTime || '10:00'}:00`)
+      : new Date(start.getTime() + 7 * 24 * 3600 * 1000)
 
     await api('POST', '/api/admin/weeks', {
       title: data.title,
       weekNumber: nextNumber,
       startTime: start.toISOString(),
       endTime: end.toISOString(),
-      // 'time decay' isn't in the api enum, treat it as partial
-      scoringSystem: data.scoringSystem === 'full' ? 'FULL' : 'PARTIAL',
-      contestType: (data.contestType || 'open').toUpperCase(),
     })
     refreshWeeks()
   }

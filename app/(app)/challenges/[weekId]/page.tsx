@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useData } from '@/context/DataContext'
@@ -22,6 +22,75 @@ function InfoIcon() {
     <svg className="w-3.5 h-3.5 text-slate-400 inline-block ml-1 cursor-help" fill="currentColor" viewBox="0 0 24 24">
       <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 100-16 8 8 0 000 16zM11 7h2v2h-2V7zm0 4h2v6h-2v-6z" />
     </svg>
+  )
+}
+
+type Phase = 'locked' | 'live' | 'ended'
+
+const PHASES: { id: Phase; label: string; blurb: string }[] = [
+  { id: 'locked', label: 'Locked', blurb: 'Contestants cannot open the problems or submit. The server rejects both.' },
+  { id: 'live', label: 'Live', blurb: 'Problems are open and every accepted submission earns points.' },
+  { id: 'ended', label: 'Ended', blurb: 'Stays open for practice. Editorials become visible and submissions score 0.' },
+]
+
+function phaseOf(active: boolean, endsAt: string | null): Phase {
+  if (endsAt && Date.now() > new Date(endsAt).getTime()) return 'ended'
+  return active ? 'live' : 'locked'
+}
+
+function formatDuration(startsAt: string | null, endsAt: string | null) {
+  if (!startsAt || !endsAt) return null
+  const ms = new Date(endsAt).getTime() - new Date(startsAt).getTime()
+  if (ms <= 0) return null
+  const hours = Math.round(ms / 3600000)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  const rest = hours % 24
+  return rest ? `${days}d ${rest}h` : `${days}d`
+}
+
+function ContestFlow({ phase }: { phase: Phase }) {
+  const current = PHASES.findIndex(p => p.id === phase)
+
+  return (
+    <ol className="grid gap-3 sm:grid-cols-3">
+      {PHASES.map((p, i) => {
+        const isNow = i === current
+        return (
+          <li
+            key={p.id}
+            className={`rounded-xl border px-4 py-3 ${
+              isNow
+                ? 'border-slate-900 bg-slate-900'
+                : i < current
+                  ? 'border-slate-200 bg-white'
+                  : 'border-dashed border-slate-300 bg-white'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-5 h-5 shrink-0 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                  isNow ? 'bg-white text-slate-900' : 'bg-slate-100 text-slate-400'
+                }`}
+              >
+                {i + 1}
+              </span>
+              <span className={`text-sm font-semibold ${isNow ? 'text-white' : 'text-slate-500'}`}>
+                {p.label}
+              </span>
+              {isNow && (
+                <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  Now
+                </span>
+              )}
+            </div>
+            <p className={`text-xs mt-2 leading-relaxed ${isNow ? 'text-slate-300' : 'text-slate-400'}`}>
+              {p.blurb}
+            </p>
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
@@ -65,13 +134,28 @@ export default function WeekDetail() {
 
   const [activeTab, setActiveTab] = useState('Details')
 
-  const [details, setDetails] = useState<DetailsForm>(() => week ? {
-    title: week.title,
-    startDate: week.startDate || '',
-    startTime: week.startTime || '10:00',
-    endDate: '',
-    endTime: '',
-  } : { title: '', startDate: '', startTime: '', endDate: '', endTime: '' })
+  const [details, setDetails] = useState<DetailsForm>({
+    title: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00',
+  })
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  const loadedId = week?.id
+  const loadedTitle = week?.title
+  const loadedStartDate = week?.startDate
+  const loadedStartTime = week?.startTime
+  const loadedEndDate = week?.endDate
+  const loadedEndTime = week?.endTime
+
+  useEffect(() => {
+    if (!loadedId) return
+    setDetails({
+      title: loadedTitle || '',
+      startDate: loadedStartDate || '',
+      startTime: loadedStartTime || '10:00',
+      endDate: loadedEndDate || '',
+      endTime: loadedEndTime || '10:00',
+    })
+  }, [loadedId, loadedTitle, loadedStartDate, loadedStartTime, loadedEndDate, loadedEndTime])
 
   if (!week) return (
     <div className="flex items-center justify-center h-full text-slate-400 text-sm">Week not found.</div>
@@ -79,15 +163,34 @@ export default function WeekDetail() {
 
   const totalScore = week.problems.reduce((s, p) => s + (p.basePoints || 0), 0)
   const slug = week.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  const phase = phaseOf(week.active, week.endsAt)
+  const duration = formatDuration(week.startsAt, week.endsAt)
 
-  function saveDetails() {
-    updateWeek(week!.id, {
-      title: details.title,
-      startDate: details.startDate,
-      startTime: details.startTime,
-      endDate: details.endDate,
-      endTime: details.endTime,
-    })
+  const startAt = details.startDate ? new Date(`${details.startDate}T${details.startTime || '10:00'}:00`) : null
+  const endAt = details.endDate ? new Date(`${details.endDate}T${details.endTime || '10:00'}:00`) : null
+  const rangeError = startAt && endAt && endAt <= startAt ? 'End time must be after the start time.' : null
+  const incomplete = !details.title.trim() || !details.startDate || !details.endDate
+  const canSave = !rangeError && !incomplete && saveState !== 'saving'
+
+  const update = (patch: Partial<DetailsForm>) => {
+    setDetails(d => ({ ...d, ...patch }))
+    setSaveState('idle')
+  }
+
+  async function saveDetails() {
+    setSaveState('saving')
+    try {
+      await updateWeek(week!.id, {
+        title: details.title,
+        startDate: details.startDate,
+        startTime: details.startTime,
+        endDate: details.endDate,
+        endTime: details.endTime,
+      })
+      setSaveState('saved')
+    } catch {
+      setSaveState('error')
+    }
   }
 
   async function handleDelete() {
@@ -127,10 +230,16 @@ export default function WeekDetail() {
               <p className="text-[11px] text-slate-500 mt-0.5">Total Score</p>
             </div>
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
-              week.active ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60' : 'bg-slate-100 text-slate-500'
+              phase === 'live'
+                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60'
+                : phase === 'ended'
+                  ? 'bg-sky-50 text-sky-700 ring-1 ring-sky-200/60'
+                  : 'bg-slate-100 text-slate-500'
             }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${week.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-              {week.active ? 'Active' : 'Inactive'}
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                phase === 'live' ? 'bg-emerald-500' : phase === 'ended' ? 'bg-sky-500' : 'bg-slate-400'
+              }`} />
+              {phase === 'live' ? 'Live' : phase === 'ended' ? 'Ended' : 'Locked'}
             </span>
             {!week.active && week.startsAt && (
               <Countdown
@@ -180,8 +289,32 @@ export default function WeekDetail() {
             <div className="mb-6">
               <h2 className="text-xl font-bold text-slate-900">Contest Details</h2>
               <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                Customize your contest by providing more information needed to create your landing page. Your contest will only be available to those who have access to the contest URL.
+                The schedule below drives what contestants can reach. Everything is enforced by the server, not just hidden in the interface.
               </p>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Contest flow</h3>
+                {duration && (
+                  <span className="text-xs text-slate-400">
+                    Runs for <span className="font-semibold text-slate-600">{duration}</span>
+                  </span>
+                )}
+              </div>
+              <ContestFlow phase={phase} />
+              {phase === 'locked' && (
+                <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                  {week.startsAt && new Date(week.startsAt) > new Date()
+                    ? 'This week activates automatically at its start time. Activate now to open it early.'
+                    : 'This week is switched off. Activate it to let contestants in.'}
+                </p>
+              )}
+              {phase === 'ended' && (
+                <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                  Past the end time the week is open to everyone regardless of the Active toggle, so deactivating it now will not close it. Push the end time back if you need to reopen scoring.
+                </p>
+              )}
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100 px-2">
@@ -189,56 +322,61 @@ export default function WeekDetail() {
                 <input
                   className={`${fieldCls} w-64`}
                   value={details.title}
-                  onChange={e => setDetails(d => ({ ...d, title: e.target.value }))}
+                  onChange={e => update({ title: e.target.value })}
                   placeholder="Contest name"
                 />
               </FormRow>
 
-              <FormRow label="Start Time" required>
+              <FormRow label="Start Time" required hint="Problems open automatically at this moment.">
                 <div className="flex items-center gap-2 flex-wrap">
                   <input
                     type="date"
                     className={`${fieldCls} w-40`}
                     value={details.startDate}
-                    onChange={e => setDetails(d => ({ ...d, startDate: e.target.value }))}
+                    onChange={e => update({ startDate: e.target.value })}
                   />
                   <span className="text-sm text-slate-400">at</span>
                   <input
                     type="time"
                     className={`${fieldCls} w-32`}
                     value={details.startTime}
-                    onChange={e => setDetails(d => ({ ...d, startTime: e.target.value }))}
+                    onChange={e => update({ startTime: e.target.value })}
                   />
                   <span className="text-xs font-semibold text-slate-400">IST</span>
                 </div>
               </FormRow>
 
-              <FormRow label="End Time" required>
+              <FormRow label="End Time" required hint="Scoring stops here and editorials go public.">
                 <div className="flex items-center gap-2 flex-wrap">
                   <input
                     type="date"
-                    className={`${fieldCls} w-40`}
+                    className={`${fieldCls} w-40 ${rangeError ? 'border-rose-300' : ''}`}
                     value={details.endDate}
-                    onChange={e => setDetails(d => ({ ...d, endDate: e.target.value }))}
+                    onChange={e => update({ endDate: e.target.value })}
                   />
                   <span className="text-sm text-slate-400">at</span>
                   <input
                     type="time"
-                    className={`${fieldCls} w-32`}
+                    className={`${fieldCls} w-32 ${rangeError ? 'border-rose-300' : ''}`}
                     value={details.endTime}
-                    onChange={e => setDetails(d => ({ ...d, endTime: e.target.value }))}
+                    onChange={e => update({ endTime: e.target.value })}
                   />
                   <span className="text-xs font-semibold text-slate-400">IST</span>
                 </div>
+                {rangeError && <p className="text-xs text-rose-600 mt-1.5">{rangeError}</p>}
               </FormRow>
             </div>
 
-            <div className="flex justify-end mt-4">
+            <div className="flex items-center justify-end gap-3 mt-4">
+              {saveState === 'saved' && <span className="text-xs font-semibold text-emerald-600">Saved</span>}
+              {saveState === 'error' && <span className="text-xs font-semibold text-rose-600">Could not save. Try again.</span>}
+              {incomplete && !rangeError && <span className="text-xs text-slate-400">Name, start and end are all required.</span>}
               <button
                 onClick={saveDetails}
-                className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
+                disabled={!canSave}
+                className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
               >
-                Save Changes
+                {saveState === 'saving' ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
           </div>

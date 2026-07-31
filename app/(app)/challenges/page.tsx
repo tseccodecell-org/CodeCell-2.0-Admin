@@ -12,46 +12,21 @@ type CreateForm = {
   title: string
   startDate: string
   startTime: string
-  scoringSystem: string
-  contestType: string
-  durationHours: number | string
+  endDate: string
+  endTime: string
 }
 
-const emptyForm: CreateForm = { title: '', startDate: '', startTime: '10:00', scoringSystem: 'partial', contestType: 'open', durationHours: 3 }
+const emptyForm: CreateForm = { title: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00' }
 
-// only these two exist in the backend enum (FULL | PARTIAL)
-const SCORING_OPTIONS = [
-  { value: 'full', label: 'Full Score', desc: 'Pass all test cases for full points, else 0' },
-  { value: 'partial', label: 'Partial Scoring', desc: 'Score proportional to test cases passed' },
-]
-
-type TypeCardProps = {
-  id: string
-  label: string
-  desc: string
-  icon: React.ReactNode
-  selected: boolean
-  onSelect: () => void
-}
-
-function TypeCard({ id, label, desc, icon, selected, onSelect }: TypeCardProps) {
-  return (
-    <label className={`flex flex-col gap-1.5 p-3.5 rounded-lg border-2 cursor-pointer ${
-      selected ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:border-slate-300 bg-white'
-    }`}>
-      <input type="radio" name="contestType" value={id} checked={selected} onChange={onSelect} className="sr-only" />
-      <div className="flex items-center gap-2">
-        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'border-slate-900' : 'border-slate-300'}`}>
-          {selected && <div className="w-2 h-2 rounded-full bg-slate-900" />}
-        </div>
-        <span className="flex items-center gap-1.5 text-sm font-bold text-slate-800">
-          {icon}
-          {label}
-        </span>
-      </div>
-      <p className="text-xs text-slate-500 pl-6">{desc}</p>
-    </label>
-  )
+function formatDuration(start: Date | null, end: Date | null) {
+  if (!start || !end) return null
+  const ms = end.getTime() - start.getTime()
+  if (ms <= 0) return null
+  const hours = Math.round(ms / 3600000)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  const rest = hours % 24
+  return rest ? `${days}d ${rest}h` : `${days}d`
 }
 
 export default function ChallengeList() {
@@ -76,8 +51,15 @@ export default function ChallengeList() {
     setForm(emptyForm)
   }
 
+  const createStart = form.startDate ? new Date(`${form.startDate}T${form.startTime || '10:00'}:00`) : null
+  const createEnd = form.endDate ? new Date(`${form.endDate}T${form.endTime || '10:00'}:00`) : null
+  const rangeError = createStart && createEnd && createEnd <= createStart ? 'End time must be after the start time.' : null
+  const createDuration = formatDuration(createStart, createEnd)
+  const canCreate = !!form.title.trim() && !!form.startDate && !!form.endDate && !rangeError
+
   function handleCreate() {
-    addWeek({ ...form, durationHours: Number(form.durationHours) })
+    if (!canCreate) return
+    addWeek(form)
     resetCreate()
   }
 
@@ -207,48 +189,8 @@ export default function ChallengeList() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Contest Type</label>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <TypeCard id="open" label="Open Challenge"
-                    desc="Submit anytime within the date range"
-                    icon={<svg className="w-3.5 h-3.5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>}
-                    selected={form.contestType === 'open'}
-                    onSelect={() => setForm(f => ({ ...f, contestType: 'open' }))} />
-                  <TypeCard id="fixed" label="Fixed Duration"
-                    desc="Timed contest — participants race the clock"
-                    icon={<svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                    selected={form.contestType === 'fixed'}
-                    onSelect={() => setForm(f => ({ ...f, contestType: 'fixed' }))} />
-                </div>
-                {form.contestType === 'fixed' && (
-                  <div className="mt-2.5">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Duration (hours)</label>
-                    <input type="number" min="1" max="24" step="0.5" className={inputCls}
-                      value={form.durationHours} onChange={e => setForm(f => ({ ...f, durationHours: e.target.value }))} />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scoring System</label>
-                <div className="flex flex-col gap-2">
-                  {SCORING_OPTIONS.map(({ value, label, desc }) => (
-                    <label key={value} className={`flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer ${
-                      form.scoringSystem === value ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
-                    }`}>
-                      <input type="radio" name="scoring" value={value} checked={form.scoringSystem === value}
-                        onChange={() => setForm(f => ({ ...f, scoringSystem: value }))} className="mt-0.5 accent-slate-900" />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{label}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Time</label>
+                <p className="text-xs text-slate-400 mb-2">Problems open to contestants at this moment.</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-500 mb-1.5">Date</label>
@@ -260,6 +202,25 @@ export default function ChallengeList() {
                   </div>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">End Time</label>
+                <p className="text-xs text-slate-400 mb-2">Scoring stops here and editorials become visible. The week stays open for practice.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5">Date</label>
+                    <input type="date" className={`${inputCls} ${rangeError ? 'border-rose-300' : ''}`} value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5">Time</label>
+                    <input type="time" className={`${inputCls} ${rangeError ? 'border-rose-300' : ''}`} value={form.endTime} onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
+                  </div>
+                </div>
+                {rangeError && <p className="text-xs text-rose-600 mt-1.5">{rangeError}</p>}
+                {createDuration && !rangeError && (
+                  <p className="text-xs text-slate-500 mt-1.5">Runs for <span className="font-semibold text-slate-700">{createDuration}</span>.</p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-lg shrink-0">
@@ -267,7 +228,7 @@ export default function ChallengeList() {
                 className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg">
                 Cancel
               </button>
-              <button type="button" disabled={!form.title.trim()}
+              <button type="button" disabled={!canCreate}
                 onClick={handleCreate}
                 className="px-5 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg">
                 Create Week

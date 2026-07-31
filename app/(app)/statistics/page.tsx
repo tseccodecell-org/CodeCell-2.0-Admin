@@ -162,7 +162,6 @@ export default function StatsList() {
                       className="hover:bg-slate-50 cursor-pointer transition-colors group">
                       <td className="px-6 py-4">
                         <p className="text-sm font-semibold text-slate-800 group-hover:text-slate-900 transition-colors">{w.title}</p>
-                        {w.contestType === 'fixed' && <p className="text-xs text-slate-400 mt-0.5">{w.durationHours}h fixed</p>}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
