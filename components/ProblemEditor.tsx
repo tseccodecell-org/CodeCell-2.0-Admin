@@ -10,14 +10,16 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { useData } from '@/context/DataContext'
+import SubmissionReview from '@/components/SubmissionReview'
 import type { CodeStub, LanguageSetting, ProblemFormData, TestCase } from '@/lib/types'
 
 // backend language ids -> editor ids (see DataContext LANG_MAP for the reverse)
 const LANG_FROM_BACKEND: Record<string, string> = { CPP: 'CPP', JAVA: 'JAVA', PYTHON: 'PYTHON3' }
 
-type Tab = 'Details' | 'Test Cases' | 'Languages' | 'Custom Checker'
+type Tab = 'Details' | 'Test Cases' | 'Languages' | 'Custom Checker' | 'Submissions'
 
 const TABS: Tab[] = ['Details', 'Test Cases', 'Languages', 'Custom Checker']
+const EDIT_TABS: Tab[] = [...TABS, 'Submissions']
 
 interface LanguageOption {
   id: string
@@ -628,7 +630,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
       </div>
 
       <div className="flex items-center border-b border-slate-200 px-8 bg-white shrink-0 overflow-x-auto">
-        {TABS.map(t => {
+        {(isEdit ? EDIT_TABS : TABS).map(t => {
           const locked = !isCreated && t !== 'Details'
           return (
             <button key={t} onClick={() => { if (!locked) setTab(t) }} disabled={locked}
@@ -907,6 +909,12 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                 <p className="text-xs text-slate-400 mt-2">Compiled and registered on the judge when you hit Save. Turning Multiple Solutions off removes the registered checker.</p>
               </div>
             </FormRow>
+          </div>
+        )}
+
+        {tab === 'Submissions' && effectiveId && (
+          <div className="max-w-5xl px-8 py-6">
+            <SubmissionReview problemId={effectiveId} />
           </div>
         )}
 
