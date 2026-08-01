@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       { source: '/api/:path*', destination: `${API_BASE}/api/:path*` },
       { source: '/admin/login', destination: `${API_BASE}/admin/login` },
       { source: '/admin/logout', destination: `${API_BASE}/admin/logout` },
+      { source: '/admin/oauth/exchange', destination: `${API_BASE}/admin/oauth/exchange` },
       { source: '/weeks', destination: `${API_BASE}/weeks` },
       { source: '/weeks/:path*', destination: `${API_BASE}/weeks/:path*` },
       { source: '/run', destination: `${API_BASE}/run` },

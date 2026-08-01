@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { adminLogin, ADMIN_GOOGLE_LOGIN_URL } from '@/lib/auth'
+import { adminLogin, exchangeAdminCode, ADMIN_GOOGLE_LOGIN_URL } from '@/lib/auth'
 
 const OAUTH_ERRORS: Record<string, string> = {
   not_an_admin: 'That Google account is not on the admin list. Ask an existing admin to add it.',
@@ -21,11 +21,23 @@ function LoginForm() {
   const params = useSearchParams()
 
   useEffect(() => {
-    const code = params.get('error')
-    if (code) {
-      setError(OAUTH_ERRORS[code] || 'Google sign in failed. Please try again.')
+    const failure = params.get('error')
+    if (failure) {
+      setError(OAUTH_ERRORS[failure] || 'Google sign in failed. Please try again.')
+      return
     }
-  }, [params])
+
+    const code = params.get('code')
+    if (!code) return
+
+    setBusy(true)
+    exchangeAdminCode(code)
+      .then(() => router.replace('/challenges'))
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Could not complete the Google sign in.')
+        setBusy(false)
+      })
+  }, [params, router])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
