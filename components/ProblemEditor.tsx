@@ -630,7 +630,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
             </FormRow>
             <FormRow label="Base Points" hint="What the problem is worth before scoring adjusts for solve rate and time elapsed">
               <div className="w-32">
-                <input type="number" min={1} className={inputCls} value={problem.basePoints}
+                <input type="number" min={0} className={inputCls} value={problem.basePoints}
                   onChange={e => set('basePoints', Number(e.target.value))} />
               </div>
             </FormRow>
