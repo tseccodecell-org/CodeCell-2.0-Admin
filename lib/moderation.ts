@@ -12,6 +12,7 @@ export interface AdminUserRow {
   banReason?: string
   bannedAt?: string
   collegeName?: string
+  warningCount?: number
 }
 
 export interface AdminSubmissionRow {
@@ -26,12 +27,41 @@ export interface AdminSubmissionRow {
   score: number
   invalidated: boolean
   submittedAt: string
+  weekId?: string
+  weekTitle?: string
+  invalidatedReason?: string
 }
 
 export interface AdminSubmissionDetail extends AdminSubmissionRow {
   sourceCode: string
-  invalidatedReason?: string
   invalidatedAt?: string
+}
+
+export interface AdminWarning {
+  id: string
+  userId?: number
+  stage?: number
+  reason: string
+  revoked?: boolean
+  issuedAt: string
+  issuedBy?: string
+}
+
+export interface AdminUserStats {
+  totalSubmissions: number
+  acceptedSubmissions: number
+  problemsSolved: number
+  invalidatedSubmissions: number
+}
+
+export interface AdminUserDetail extends AdminUserRow {
+  course?: string
+  year?: string
+  location?: string
+  isRegistered?: boolean
+  createdAt?: string
+  warnings?: AdminWarning[]
+  stats?: AdminUserStats
 }
 
 async function call<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -58,6 +88,18 @@ async function call<T>(method: string, url: string, body?: unknown): Promise<T> 
 export function listUsers(search: string, limit = 50, offset = 0) {
   const q = new URLSearchParams({ search, limit: String(limit), offset: String(offset) })
   return call<{ users: AdminUserRow[]; total: number }>('GET', `/api/admin/users?${q}`)
+}
+
+export function getUser(userId: number) {
+  return call<AdminUserDetail>('GET', `/api/admin/users/${userId}`)
+}
+
+export function warnUser(userId: number, reason: string) {
+  return call<unknown>('POST', `/api/admin/users/${userId}/warn`, { reason })
+}
+
+export function revokeWarning(userId: number, warningId: string) {
+  return call<unknown>('POST', `/api/admin/users/${userId}/warnings/${warningId}/revoke`)
 }
 
 export function banUser(userId: number, reason: string) {

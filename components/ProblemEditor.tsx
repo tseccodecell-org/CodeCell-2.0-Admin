@@ -10,16 +10,15 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { useData } from '@/context/DataContext'
-import SubmissionReview from '@/components/SubmissionReview'
+import Toast, { type ToastState } from '@/components/Toast'
 import type { CodeStub, LanguageSetting, ProblemFormData, TestCase } from '@/lib/types'
 
 // backend language ids -> editor ids (see DataContext LANG_MAP for the reverse)
 const LANG_FROM_BACKEND: Record<string, string> = { CPP: 'CPP', JAVA: 'JAVA', PYTHON: 'PYTHON3' }
 
-type Tab = 'Details' | 'Test Cases' | 'Languages' | 'Custom Checker' | 'Submissions'
+type Tab = 'Details' | 'Test Cases' | 'Languages' | 'Custom Checker' | 'Editorial'
 
-const TABS: Tab[] = ['Details', 'Test Cases', 'Languages', 'Custom Checker']
-const EDIT_TABS: Tab[] = [...TABS, 'Submissions']
+const TABS: Tab[] = ['Details', 'Test Cases', 'Languages', 'Custom Checker', 'Editorial']
 
 interface LanguageOption {
   id: string
@@ -85,37 +84,6 @@ function LockIcon() {
     <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
     </svg>
-  )
-}
-
-interface ToastState {
-  message: string
-  kind: 'success' | 'error'
-}
-
-function Toast({ toast, onClose }: { toast: ToastState; onClose: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000)
-    return () => clearTimeout(t)
-  }, [toast, onClose])
-
-  const success = toast.kind === 'success'
-  return (
-    <div className="fixed bottom-20 right-8 z-50 animate-in fade-in slide-in-from-bottom-2">
-      <div className={`flex items-center gap-2.5 pl-4 pr-3 py-3 rounded-lg shadow-lg border text-sm font-medium ${
-        success ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'
-      }`}>
-        <svg className={`w-4 h-4 shrink-0 ${success ? 'text-emerald-500' : 'text-rose-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {success
-            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />}
-        </svg>
-        {toast.message}
-        <button onClick={onClose} className="ml-1 p-0.5 rounded hover:bg-black/5 transition-colors">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-      </div>
-    </div>
   )
 }
 
@@ -593,7 +561,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
         setSavedId(newId)
         await refreshTestCases(newId)
         setDirty(false)
-        setToast({ message: 'Problem created. Test cases, languages and checker are unlocked.', kind: 'success' })
+        setToast({ message: 'Problem created. Test cases, languages, checker and editorial are unlocked.', kind: 'success' })
         setTab('Test Cases')
       }
 
@@ -630,7 +598,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
       </div>
 
       <div className="flex items-center border-b border-slate-200 px-8 bg-white shrink-0 overflow-x-auto">
-        {(isEdit ? EDIT_TABS : TABS).map(t => {
+        {TABS.map(t => {
           const locked = !isCreated && t !== 'Details'
           return (
             <button key={t} onClick={() => { if (!locked) setTab(t) }} disabled={locked}
@@ -663,9 +631,9 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-semibold text-sky-900">Step 1 of 4 &mdash; problem details</p>
+                  <p className="text-sm font-semibold text-sky-900">Step 1 of 5: problem details</p>
                   <p className="text-xs text-sky-700 mt-0.5 leading-relaxed">
-                    Save these details to create the problem. Test cases, languages and the custom checker unlock straight after, and you stay on this page.
+                    Save these details to create the problem. Test cases, languages, the custom checker and the editorial unlock straight after, and you stay on this page.
                   </p>
                 </div>
               </div>
@@ -710,9 +678,6 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
             </FormRow>
             <FormRow label="Output Format">
               <RichTextArea value={problem.outputFormat} onChange={e => set('outputFormat', e.target.value)} rows={4} placeholder="Describe the output format..." />
-            </FormRow>
-            <FormRow label="Editorial" hint="Hidden from contestants until the week ends, then shown on the problem page">
-              <RichTextArea value={problem.editorial} onChange={e => set('editorial', e.target.value)} rows={8} placeholder="Explain the intended approach. Leave empty if there is no editorial yet." />
             </FormRow>
           </div>
         )}
@@ -912,9 +877,30 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
           </div>
         )}
 
-        {tab === 'Submissions' && effectiveId && (
-          <div className="max-w-5xl px-8 py-6">
-            <SubmissionReview problemId={effectiveId} />
+        {tab === 'Editorial' && (
+          <div className="max-w-4xl px-8 py-2">
+            <div className="flex items-start gap-3 my-4 px-4 py-3 bg-sky-50 border border-sky-200 rounded-lg">
+              <svg className="w-5 h-5 shrink-0 text-sky-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="text-sm font-semibold text-sky-900">Only visible to contestants after the week ends</p>
+                <p className="text-xs text-sky-700 mt-0.5 leading-relaxed">
+                  The server hides the editorial while the week is live, so you can write it as you build the problem. It appears on the problem page the moment the end time passes.
+                </p>
+              </div>
+            </div>
+            {!problem.editorial.trim() && (
+              <div className="flex items-center gap-2 mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                <svg className="w-5 h-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                No editorial written yet. Contestants will see nothing here once the week ends.
+              </div>
+            )}
+            <FormRow label="Editorial" hint="Markdown, KaTeX and images all work, same as the problem statement">
+              <RichTextArea value={problem.editorial} onChange={e => set('editorial', e.target.value)} rows={16} placeholder="Explain the intended approach, the complexity and the traps." />
+            </FormRow>
           </div>
         )}
 
