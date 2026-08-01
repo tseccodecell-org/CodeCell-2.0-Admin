@@ -61,7 +61,7 @@ export default function Participants() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-8 py-3 sm:py-0 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-base font-bold text-slate-900">Participants</h1>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{total}</span>
@@ -70,11 +70,11 @@ export default function Participants() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search name, username or email..."
-          className="w-72 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
+          className="w-full sm:w-72 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400"
         />
       </div>
 
-      <div className="px-8 py-3 border-b border-slate-200/70 bg-white">
+      <div className="px-4 sm:px-8 py-3 border-b border-slate-200/70 bg-white">
         <p className="text-sm text-slate-500">
           Banning blocks a participant from submitting and running code. Open a participant to see their
           submissions, issue warnings or invalidate individual attempts.
@@ -84,7 +84,7 @@ export default function Participants() {
         </p>
       </div>
 
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 sm:p-8 overflow-auto">
         {loading && users.length === 0 && (
           <p className="text-sm text-slate-400">Loading participants...</p>
         )}
@@ -99,14 +99,15 @@ export default function Participants() {
 
         {users.length > 0 && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200">
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Participant</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Email</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">College</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Rating</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Participant</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Email</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">College</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Rating</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Status</th>
                   <th className="px-6 py-3.5 text-right" />
                 </tr>
               </thead>
@@ -164,6 +165,7 @@ export default function Participants() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

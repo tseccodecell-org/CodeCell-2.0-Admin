@@ -166,7 +166,7 @@ export default function ProblemTest() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Breadcrumb */}
-      <div className="h-16 bg-white border-b border-slate-200/80 flex items-center px-8 gap-2 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200/80 flex flex-wrap items-center px-4 sm:px-8 py-3 sm:py-0 gap-2 shrink-0">
         <Link href="/challenges" className="text-sm text-slate-400 hover:text-slate-700 font-medium">Weekly Challenges</Link>
         <span className="text-slate-300">/</span>
         <Link href={`/challenges/${weekId}`} className="text-sm text-slate-400 hover:text-slate-700 font-medium">{week.title}</Link>
@@ -174,7 +174,7 @@ export default function ProblemTest() {
         <span className="text-sm font-semibold text-slate-900">Test: {problem.name}</span>
       </div>
 
-      <div className="flex-1 p-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex-1 p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* left — editor */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
@@ -219,7 +219,7 @@ export default function ProblemTest() {
 
           {runResult && (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-sm font-bold text-slate-800">Run result</h3>
                 <span className="text-xs text-slate-500">{runResult.status}</span>
                 {runResult.executionTimeMs != null && <span className="text-xs text-slate-500">⏱ {runResult.executionTimeMs} ms</span>}
@@ -241,7 +241,7 @@ export default function ProblemTest() {
 
           {submission && (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-sm font-bold text-slate-800">Submission</h3>
                 <span className="text-xs text-slate-500">{submission.status}</span>
                 {submission.verdict && submission.status === 'COMPLETED' && <VerdictBadge verdict={submission.verdict} />}
@@ -259,13 +259,14 @@ export default function ProblemTest() {
               )}
 
               {submission.testResults?.length ? (
+                <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border border-slate-200 rounded-lg overflow-hidden">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">#</th>
-                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Verdict</th>
-                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Time</th>
-                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Memory</th>
+                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">#</th>
+                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Verdict</th>
+                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Time</th>
+                      <th className="px-4 py-2.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Memory</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -279,6 +280,7 @@ export default function ProblemTest() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               ) : null}
             </div>
           )}

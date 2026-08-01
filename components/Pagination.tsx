@@ -10,9 +10,9 @@ export default function Pagination({ total, page, setPage }: { total: number; pa
   const start = (page - 1) * PAGE_SIZE + 1
   const end   = Math.min(page * PAGE_SIZE, total)
   return (
-    <div className="px-6 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/60">
+    <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/60">
       <span className="text-xs text-slate-500 tabular-nums">Showing {start} to {end} of {total}</span>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
           className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           ← Prev

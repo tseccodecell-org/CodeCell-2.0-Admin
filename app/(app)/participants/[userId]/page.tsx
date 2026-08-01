@@ -70,8 +70,8 @@ function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-start gap-6 py-4 border-b border-slate-100 last:border-0">
-      <div className="w-40 shrink-0">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-6 py-4 border-b border-slate-100 last:border-0">
+      <div className="w-full sm:w-40 shrink-0">
         <span className="text-sm font-semibold text-slate-700">{label}</span>
       </div>
       <div className="flex-1 min-w-0">{children}</div>
@@ -359,7 +359,7 @@ export default function ParticipantDetail() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="h-16 bg-white border-b border-slate-200/80 flex items-center px-8 gap-2 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200/80 flex flex-wrap items-center px-4 sm:px-8 py-3 sm:py-0 gap-2 shrink-0">
         <Link href="/participants" className="text-sm text-slate-400 hover:text-slate-700 transition-colors font-medium">
           Participants
         </Link>
@@ -369,8 +369,8 @@ export default function ParticipantDetail() {
         <span className="text-sm font-semibold text-slate-900">{user.name || user.username}</span>
       </div>
 
-      <div className="bg-white border-b border-slate-200 px-8 pt-6 pb-0 shrink-0">
-        <div className="flex items-start justify-between gap-6 mb-5">
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 pt-6 pb-0 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 mb-5">
           <div className="flex items-start gap-4 min-w-0">
             <Avatar name={user.name || user.username} />
             <div className="min-w-0">
@@ -391,7 +391,7 @@ export default function ParticipantDetail() {
               <p className="text-sm text-slate-500">{user.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="grid grid-cols-2 gap-2.5 sm:flex sm:items-center sm:shrink-0">
             <div className="text-center px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
               <p className="text-xl font-bold text-slate-900 tabular-nums">{stats.totalSubmissions}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Submissions</p>
@@ -411,7 +411,7 @@ export default function ParticipantDetail() {
           </div>
         </div>
 
-        <div className="flex items-end">
+        <div className="flex items-end overflow-x-auto">
           {TABS.map(t => (
             <button
               key={t}
@@ -428,13 +428,13 @@ export default function ParticipantDetail() {
         </div>
       </div>
 
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 sm:p-8 overflow-auto">
 
         {tab === 'Submissions' && (
           <div className="flex flex-col gap-4">
             {subError && <p className="text-sm text-rose-600">{subError}</p>}
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-6 pt-4 pb-3 flex flex-col gap-2.5">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 sm:px-6 pt-4 pb-3 flex flex-col gap-2.5">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider w-16 shrink-0">Week</span>
                 <select
@@ -483,7 +483,7 @@ export default function ParticipantDetail() {
                   )
                 })}
                 <button onClick={() => setInvalidatedOnly(o => !o)}
-                  className={`ml-auto px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${invalidatedOnly ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  className={`sm:ml-auto px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors ${invalidatedOnly ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
                   Invalidated only
                 </button>
               </div>
@@ -509,7 +509,7 @@ export default function ParticipantDetail() {
               <h2 className="text-xl font-bold text-slate-900">Profile</h2>
               <p className="text-sm text-slate-500 mt-1">What the participant filled in when they registered.</p>
             </div>
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-6 py-2">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 sm:px-6 py-2">
               <InfoRow label="Full name"><InfoValue value={user.name} /></InfoRow>
               <InfoRow label="Username"><p className="text-sm text-slate-700 font-mono">@{user.username}</p></InfoRow>
               <InfoRow label="Email"><InfoValue value={user.email} /></InfoRow>
