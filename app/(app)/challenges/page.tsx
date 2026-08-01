@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useData } from '@/context/DataContext'
 import Countdown from '@/components/Countdown'
+import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 import type { Week } from '@/lib/types'
 
 const inputCls = 'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white'
@@ -42,6 +43,7 @@ export default function ChallengeList() {
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState<CreateForm>(emptyForm)
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
 
   const filtered = weeks.filter(w => w.title.toLowerCase().includes(search.toLowerCase()))
   const activeCount = weeks.filter(w => w.active).length
@@ -65,9 +67,45 @@ export default function ChallengeList() {
 
   function handleDelete(e: React.MouseEvent, week: Week) {
     e.stopPropagation()
-    if (confirm(`Delete "${week.title}"? This will remove the week and its problems.`)) {
-      deleteWeek(week.id)
+    setConfirmRequest({
+      title: 'Delete this week',
+      body: `"${week.title}" and everything under it will be removed.`,
+      confirmLabel: 'Delete week',
+      tone: 'danger',
+      typeToConfirm: week.title,
+      consequences: [
+        `${week.problems.length} problems go with it`,
+        'Submissions and leaderboard history are kept',
+      ],
+      onConfirm: () => deleteWeek(week.id),
+    })
+  }
+
+  function handleToggleActive(week: Week) {
+    if (week.active) {
+      setConfirmRequest({
+        title: 'Deactivate this week',
+        body: `"${week.title}" will stop being visible to participants and they will not be able to submit.`,
+        confirmLabel: 'Deactivate',
+        tone: 'danger',
+        typeToConfirm: week.title,
+        consequences: [
+          'Participants lose access to its problems',
+          'The scheduler will not put it back live on its own',
+        ],
+        onConfirm: () => updateWeek(week.id, { active: false }),
+      })
+      return
     }
+
+    setConfirmRequest({
+      title: 'Activate this week',
+      body: `"${week.title}" goes live and participants can start submitting straight away.`,
+      confirmLabel: 'Activate',
+      tone: 'neutral',
+      consequences: [`${week.problems.length} problems become visible`],
+      onConfirm: () => updateWeek(week.id, { active: true }),
+    })
   }
 
   return (
@@ -154,7 +192,7 @@ export default function ChallengeList() {
                     </td>
                     <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => updateWeek(w.id, { active: !w.active })}
+                        <button onClick={() => handleToggleActive(w)}
                           className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50">
                           {w.active ? 'Deactivate' : 'Activate'}
                         </button>
@@ -238,6 +276,10 @@ export default function ChallengeList() {
             </div>
           </div>
         </div>
+      )}
+
+      {confirmRequest && (
+        <ConfirmModal request={confirmRequest} onCancel={() => setConfirmRequest(null)} />
       )}
     </div>
   )
