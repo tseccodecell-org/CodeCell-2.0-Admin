@@ -102,7 +102,7 @@ function LoginForm() {
                 type="email"
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError('') }}
-                placeholder="admin@tseccodecell.com"
+                placeholder="Enter your email"
                 required
                 autoComplete="username"
                 className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:border-slate-400"
