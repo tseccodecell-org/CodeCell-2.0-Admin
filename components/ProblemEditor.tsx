@@ -12,6 +12,7 @@ import 'katex/dist/katex.min.css'
 import { useData } from '@/context/DataContext'
 import Toast, { type ToastState } from '@/components/Toast'
 import type { CodeStub, LanguageSetting, ProblemFormData, TestCase } from '@/lib/types'
+import { DEFAULT_STUBS } from '@/lib/starterCode'
 
 // backend language ids -> editor ids (see DataContext LANG_MAP for the reverse)
 const LANG_FROM_BACKEND: Record<string, string> = { CPP: 'CPP', JAVA: 'JAVA', PYTHON: 'PYTHON3' }
@@ -34,23 +35,6 @@ const ALL_LANGUAGES: LanguageOption[] = [
   { id: 'PYTHON3', label: 'Python 3', defaultTime: 5, defaultMem: 256 },
 ]
 
-const DEFAULT_STUBS: Record<string, CodeStub> = {
-  CPP: {
-    head: '',
-    body: `#include <cmath>\n#include <cstdio>\n#include <vector>\n#include <iostream>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    /* Enter your code here. Read input from STDIN. Print output to STDOUT */\n    return 0;\n}`,
-    tail: '',
-  },
-  JAVA: {
-    head: 'import java.io.*;',
-    body: `public class Solution {\n    public static void main(String[] args) throws IOException {\n        /* Enter your code here. Read input from STDIN. Print output to STDOUT */\n    }\n}`,
-    tail: '',
-  },
-  PYTHON3: {
-    head: '',
-    body: `# Enter your code here. Read input from STDIN. Print output to STDOUT`,
-    tail: '',
-  },
-}
 
 const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 text-slate-800 placeholder:text-slate-400'
 const selectCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 text-slate-800 bg-white'
