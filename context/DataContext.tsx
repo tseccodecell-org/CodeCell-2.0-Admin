@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { initialEvents } from '@/lib/mockData'
+import { stubToStarterCode } from '@/lib/starterCode'
 import type {
   CheckerInfo, DataContextValue, EventItem, LanguageConfig,
   Problem, ProblemFormData, TestCase, Week, WeekFormInput,
@@ -225,12 +226,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!backendLang) continue // backend only judges CPP/JAVA/PYTHON for now
       const settings = problem.languageSettings[langId] || {}
       const defaults = LANG_DEFAULTS[langId]
-      const stub = problem.codeStubs[langId]
       await api('POST', `/api/admin/problems/${problemId}/languages`, {
         language: backendLang,
         timeLimitMs: (settings.timeLimit ?? defaults.t) * 1000,
         memoryLimitMb: settings.memLimit ?? defaults.m,
-        starterCode: stub ? [stub.head, stub.body, stub.tail].filter(Boolean).join('\n') : '',
+        starterCode: stubToStarterCode(langId, problem.codeStubs[langId]),
       })
     }
 
@@ -294,12 +294,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!backendLang) continue
       const settings = problem.languageSettings[langId] || {}
       const defaults = LANG_DEFAULTS[langId]
-      const stub = problem.codeStubs[langId]
       await api('POST', `/api/admin/problems/${problemId}/languages`, {
         language: backendLang,
         timeLimitMs: (settings.timeLimit ?? defaults.t) * 1000,
         memoryLimitMb: settings.memLimit ?? defaults.m,
-        starterCode: stub ? [stub.head, stub.body, stub.tail].filter(Boolean).join('\n') : '',
+        starterCode: stubToStarterCode(langId, problem.codeStubs[langId]),
       })
     }
 
