@@ -121,7 +121,7 @@ export default function ProblemTest() {
     setRunResult({ status: 'QUEUED' })
     setSubmission(null)
     try {
-      const res = await fetch(`/api/problems/${problemId}/run`, {
+      const res = await fetch(`/api/admin/problems/${problemId}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language, sourceCode: code, stdin }),
@@ -129,7 +129,7 @@ export default function ProblemTest() {
       })
       const body = await res.json()
       if (!body.success) throw new Error(body.error?.message || res.status)
-      pollUntilDone(`/api/runs/${body.data.runId}`, setRunResult)
+      pollUntilDone(`/api/admin/runs/${body.data.runId}`, setRunResult)
     } catch (e: any) {
       alert(`run failed: ${e.message}`)
       setBusy(false)
@@ -143,15 +143,15 @@ export default function ProblemTest() {
     setSubmission({ status: 'QUEUED' })
     setRunResult(null)
     try {
-      const res = await fetch('/run', {
+      const res = await fetch(`/api/admin/problems/${problemId}/test-submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 1, problemId, language, code }),
+        body: JSON.stringify({ language, sourceCode: code }),
         credentials: 'include',
       })
       if (!res.ok) throw new Error(await res.text())
-      const data = await res.json()
-      pollUntilDone(`/api/submissions/${data.submissionId}`, setSubmission)
+      const body = await res.json()
+      pollUntilDone(`/api/admin/test-submissions/${body.data.submissionId}`, setSubmission)
     } catch (e: any) {
       alert(`submit failed: ${e.message}`)
       setBusy(false)
