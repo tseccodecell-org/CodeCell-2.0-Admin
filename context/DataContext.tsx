@@ -24,6 +24,14 @@ const LANG_DEFAULTS: Record<string, { t: number; m: number }> = {
   CPP: { t: 2, m: 256 }, JAVA: { t: 4, m: 512 }, PYTHON3: { t: 5, m: 256 },
 }
 
+// zero is a real value here, so the usual `|| 100` fallback cannot be used:
+// it is falsy and would silently turn a deliberate 0 into 100
+function normalisedBasePoints(value: number | string | undefined): number {
+  const points = Number(value)
+  if (!Number.isFinite(points) || points < 0) return 100
+  return Math.floor(points)
+}
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const [weeks, setWeeks] = useState<Week[]>([])
   // events api isn't built yet (Sanket's), so events stay mock for now
@@ -206,7 +214,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       inputFormat: problem.inputFormat,
       outputFormat: problem.outputFormat,
       constraints: problem.constraints,
-      basePoints: Number(problem.basePoints) || 100,
+      basePoints: normalisedBasePoints(problem.basePoints),
       multipleSolution: !!problem.multipleSolution,
       editorial: problem.editorial || '',
     })
@@ -275,7 +283,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       inputFormat: problem.inputFormat,
       outputFormat: problem.outputFormat,
       constraints: problem.constraints,
-      basePoints: Number(problem.basePoints) || 100,
+      basePoints: normalisedBasePoints(problem.basePoints),
       multipleSolution: !!problem.multipleSolution,
       editorial: problem.editorial || '',
     })
