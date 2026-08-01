@@ -64,6 +64,7 @@ export interface ProblemFormData {
 export interface Week {
   id: string
   title: string
+  description: string
   weekNumber: number
   active: boolean
   problems: Problem[]

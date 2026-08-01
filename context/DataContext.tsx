@@ -117,6 +117,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return {
           id: w.id,
           title: w.title,
+          description: w.description || '',
           weekNumber: w.weekNumber,
           active: w.active,
           problems,
@@ -166,6 +167,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     await api('POST', '/api/admin/weeks', {
       title: data.title,
+      description: data.description || '',
       weekNumber: nextNumber,
       startTime: start.toISOString(),
       endTime: end.toISOString(),
@@ -189,6 +191,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const body: Record<string, unknown> = {}
     if (data.title !== undefined) body.title = data.title
+    if (data.description !== undefined) body.description = data.description
     if (data.startDate) {
       body.startTime = new Date(`${data.startDate}T${data.startTime || '10:00'}:00`).toISOString()
     }

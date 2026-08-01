@@ -122,6 +122,7 @@ function FormRow({ label, required, hint, children }: FormRowProps) {
 
 type DetailsForm = {
   title: string
+  description: string
   startDate: string
   startTime: string
   endDate: string
@@ -137,13 +138,14 @@ export default function WeekDetail() {
   const [activeTab, setActiveTab] = useState('Details')
 
   const [details, setDetails] = useState<DetailsForm>({
-    title: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00',
+    title: '', description: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00',
   })
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
 
   const loadedId = week?.id
   const loadedTitle = week?.title
+  const loadedDescription = week?.description
   const loadedStartDate = week?.startDate
   const loadedStartTime = week?.startTime
   const loadedEndDate = week?.endDate
@@ -153,12 +155,13 @@ export default function WeekDetail() {
     if (!loadedId) return
     setDetails({
       title: loadedTitle || '',
+      description: loadedDescription || '',
       startDate: loadedStartDate || '',
       startTime: loadedStartTime || '10:00',
       endDate: loadedEndDate || '',
       endTime: loadedEndTime || '10:00',
     })
-  }, [loadedId, loadedTitle, loadedStartDate, loadedStartTime, loadedEndDate, loadedEndTime])
+  }, [loadedId, loadedTitle, loadedDescription, loadedStartDate, loadedStartTime, loadedEndDate, loadedEndTime])
 
   if (!week) return (
     <div className="flex items-center justify-center h-full text-slate-400 text-sm">Week not found.</div>
@@ -185,6 +188,7 @@ export default function WeekDetail() {
     try {
       await updateWeek(week!.id, {
         title: details.title,
+        description: details.description,
         startDate: details.startDate,
         startTime: details.startTime,
         endDate: details.endDate,
@@ -381,6 +385,16 @@ export default function WeekDetail() {
                   value={details.title}
                   onChange={e => update({ title: e.target.value })}
                   placeholder="Contest name"
+                />
+              </FormRow>
+
+              <FormRow label="Description" hint="Shown under the week's name on the participant timeline.">
+                <textarea
+                  className={`${fieldCls} w-full resize-y`}
+                  rows={3}
+                  value={details.description}
+                  onChange={e => update({ description: e.target.value })}
+                  placeholder="What this week is about"
                 />
               </FormRow>
 
