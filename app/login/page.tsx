@@ -1,15 +1,31 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { adminLogin } from '@/lib/auth'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { adminLogin, ADMIN_GOOGLE_LOGIN_URL } from '@/lib/auth'
 
-export default function Login() {
+const OAUTH_ERRORS: Record<string, string> = {
+  not_an_admin: 'That Google account is not on the admin list. Ask an existing admin to add it.',
+  missing_code: 'Google did not complete the sign in. Please try again.',
+  exchange_failed: 'Could not verify that Google account. Please try again.',
+  profile_failed: 'Could not read your Google profile. Please try again.',
+  token_failed: 'Signed in with Google, but the session could not be created. Please try again.',
+}
+
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const router = useRouter()
+  const params = useSearchParams()
+
+  useEffect(() => {
+    const code = params.get('error')
+    if (code) {
+      setError(OAUTH_ERRORS[code] || 'Google sign in failed. Please try again.')
+    }
+  }, [params])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -45,6 +61,26 @@ export default function Login() {
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+          <button
+            type="button"
+            onClick={() => { window.location.href = ADMIN_GOOGLE_LOGIN_URL }}
+            className="w-full flex items-center justify-center gap-2.5 border border-slate-200 rounded-lg py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.73 1.22 9.24 3.61l6.9-6.9C35.94 2.52 30.42 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.03 6.24C12.48 13.54 17.76 9.5 24 9.5z" />
+              <path fill="#4285F4" d="M46.5 24.55c0-1.63-.15-3.2-.42-4.72H24v8.94h12.67c-.55 2.95-2.2 5.45-4.69 7.13l7.2 5.58c4.2-3.87 6.62-9.57 6.62-16.93z" />
+              <path fill="#FBBC05" d="M10.59 28.54a14.48 14.48 0 010-9.08l-8.03-6.24A24.03 24.03 0 000 24c0 3.84.92 7.48 2.56 10.78l8.03-6.24z" />
+              <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.9-5.82l-7.2-5.58c-2 1.34-4.56 2.14-8.7 2.14-6.24 0-11.52-4.04-13.4-9.96l-8.03 6.24C6.5 42.62 14.62 48 24 48z" />
+            </svg>
+            Sign in with Google
+          </button>
+
+          <div className="flex items-center gap-3 my-5">
+            <span className="flex-1 h-px bg-slate-200" />
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">or</span>
+            <span className="flex-1 h-px bg-slate-200" />
+          </div>
+
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -97,5 +133,13 @@ export default function Login() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   )
 }

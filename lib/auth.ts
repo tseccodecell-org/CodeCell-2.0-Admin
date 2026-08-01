@@ -4,6 +4,10 @@
 
 const SESSION_PROBE = '/api/admin/weeks'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tseccodecell.com'
+
+export const ADMIN_GOOGLE_LOGIN_URL = `${API_BASE}/admin/oauth/google/login`
+
 export class AuthError extends Error {
   status: number
   constructor(status: number, message: string) {
