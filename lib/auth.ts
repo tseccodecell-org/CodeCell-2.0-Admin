@@ -8,6 +8,24 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.tseccodece
 
 export const ADMIN_GOOGLE_LOGIN_URL = `${API_BASE}/admin/oauth/google/login`
 
+export async function exchangeAdminCode(code: string): Promise<void> {
+  const res = await fetch('/admin/oauth/exchange', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+    credentials: 'include',
+  })
+
+  if (res.ok) return
+
+  const body = await res.json().catch(() => ({} as Record<string, unknown>))
+  const message =
+    (typeof body.message === 'string' && body.message) ||
+    'That sign in link is no longer valid. Please sign in again.'
+
+  throw new AuthError(res.status, message)
+}
+
 export class AuthError extends Error {
   status: number
   constructor(status: number, message: string) {
