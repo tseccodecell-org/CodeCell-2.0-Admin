@@ -116,7 +116,7 @@ export default function EventDetail() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="h-16 bg-white border-b border-slate-200 flex items-center px-8 gap-2 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200 flex flex-wrap items-center px-4 sm:px-8 py-3 sm:py-0 gap-2 shrink-0">
         <Link href="/events" className="text-sm text-slate-400 hover:text-slate-700 font-medium">
           Events
         </Link>
@@ -126,8 +126,8 @@ export default function EventDetail() {
         <span className="text-sm font-semibold text-slate-900">{event.title}</span>
       </div>
 
-      <div className="flex-1 p-8 flex flex-col gap-6">
-        <div className="bg-white rounded-lg border border-slate-200 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex-1 p-4 sm:p-8 flex flex-col gap-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex flex-col gap-2.5">
             <h2 className="text-xl font-bold text-slate-900">{event.title}</h2>
             <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500">
@@ -149,7 +149,7 @@ export default function EventDetail() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <div className="text-center px-5 py-3 bg-slate-50 rounded-lg border border-slate-200">
               <p className="text-2xl font-bold text-slate-900 tabular-nums">{event.problems.length}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Problems</p>
@@ -183,7 +183,7 @@ export default function EventDetail() {
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-slate-900">Problems</h3>
               <p className="text-xs text-slate-500 mt-0.5">Standard CP/DSA problems for this contest</p>
@@ -215,15 +215,16 @@ export default function EventDetail() {
               </button>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">#</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Problem Name</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Difficulty</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Max Score</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Time Limit</th>
-                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">#</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Problem Name</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Difficulty</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Max Score</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Time Limit</th>
+                  <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -252,6 +253,7 @@ export default function EventDetail() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

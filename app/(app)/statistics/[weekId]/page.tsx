@@ -363,7 +363,7 @@ function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
 
 function SearchBar({ value, onChange, placeholder = 'Search participant...' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div className="relative">
+    <div className="relative w-full sm:w-auto">
       <svg className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
@@ -371,7 +371,7 @@ function SearchBar({ value, onChange, placeholder = 'Search participant...' }: {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-56 focus:outline-none focus:border-slate-400 bg-white"
+        className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-full sm:w-56 focus:outline-none focus:border-slate-400 bg-white"
       />
       {value && (
         <button onClick={() => onChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -400,18 +400,18 @@ function SubmissionModal({ submission, onClose }: { submission: Submission | nul
       <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
       <div className="fixed inset-4 z-60 bg-white rounded-lg shadow-lg flex flex-col overflow-hidden border border-slate-200">
         {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0 bg-slate-50">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-100 shrink-0 bg-slate-50">
+          <div className="flex items-center gap-4 min-w-0">
             <Avatar name={submission.participantName} size="sm" />
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-bold text-slate-900">{submission.participantName}</span>
                 <span className="text-slate-300">·</span>
                 <span className="text-sm font-semibold text-slate-600">
                   {submission.problemLabel}. {submission.problemName}
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex flex-wrap items-center gap-2 mt-0.5">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${VERDICT_STYLE[submission.verdict]}`}>{submission.verdict}</span>
                 <span className="text-xs text-slate-400">{submission.lang}</span>
                 <span className="text-xs text-slate-400 tabular-nums">{submission.timeStr}</span>
@@ -427,9 +427,9 @@ function SubmissionModal({ submission, onClose }: { submission: Submission | nul
         </div>
 
         {/* Modal body: code (left) + test cases (right) */}
-        <div className="flex-1 flex overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
           {/* Code view */}
-          <div className="flex-1 flex flex-col border-r border-slate-200 min-w-0">
+          <div className="flex-1 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-200 min-w-0 min-h-0">
             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-900 shrink-0">
               <span className="text-xs font-semibold text-slate-400">{submission.lang}</span>
               <span className="text-xs text-slate-500">{lines.length} lines</span>
@@ -451,7 +451,7 @@ function SubmissionModal({ submission, onClose }: { submission: Submission | nul
           </div>
 
           {/* Test case results */}
-          <div className="w-96 shrink-0 flex flex-col overflow-hidden">
+          <div className="w-full lg:w-96 flex-1 lg:flex-none lg:shrink-0 flex flex-col overflow-hidden min-h-0">
             <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
               <span className="text-xs font-semibold text-slate-700">Test Cases</span>
               <span className={`text-xs font-bold tabular-nums ${passCount === results.length ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -709,9 +709,9 @@ function Pagination({ total, page, setPage }: { total: number; page: number; set
   const start = (page - 1) * PAGE_SIZE + 1
   const end   = Math.min(page * PAGE_SIZE, total)
   return (
-    <div className="px-6 py-3.5 border-t border-slate-100 flex items-center justify-between bg-slate-50/60">
+    <div className="px-4 sm:px-6 py-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/60">
       <span className="text-xs text-slate-500 tabular-nums">Showing {start}–{end} of {total}</span>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
           className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           ← Prev
@@ -779,7 +779,7 @@ export default function StatsDetail() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Breadcrumb */}
-      <div className="h-16 bg-white border-b border-slate-200/80 flex items-center px-8 gap-2 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200/80 flex flex-wrap items-center px-4 sm:px-8 py-3 sm:py-0 gap-2 shrink-0">
         <Link href="/statistics" className="text-sm text-slate-400 hover:text-slate-700 transition-colors font-medium">Analytics</Link>
         <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -788,8 +788,8 @@ export default function StatsDetail() {
       </div>
 
       {/* Contest header + tabs */}
-      <div className="bg-white border-b border-slate-200 px-8 pt-5 pb-0 shrink-0">
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 pt-5 pb-0 shrink-0">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{week.title}</h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-slate-500">
@@ -802,7 +802,7 @@ export default function StatsDetail() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             {[{ v: totalParticipants, l: 'Participants' }, { v: totalSubmissions, l: 'Submissions' }, { v: `${completionRate}%`, l: 'Completion' }].map(k => (
               <div key={k.l} className="text-center px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
                 <p className="text-xl font-bold text-slate-900 tabular-nums">{k.v}</p>
@@ -812,7 +812,7 @@ export default function StatsDetail() {
           </div>
         </div>
 
-        <div className="flex items-end">
+        <div className="flex items-end overflow-x-auto">
           {TABS.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`px-5 py-3 text-sm border-b-2 transition-all whitespace-nowrap ${
@@ -829,7 +829,7 @@ export default function StatsDetail() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 sm:p-8 overflow-auto">
         {problems.length === 0 && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
             <svg className="w-10 h-10 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -870,7 +870,7 @@ export default function StatsDetail() {
                 }))
                 return (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
                       <h3 className="font-bold text-slate-900">Participant Dropout by Problem</h3>
                       <p className="text-xs text-slate-500 mt-0.5 mb-4">Where participants stopped engaging — a steep fall shows the wall problem</p>
                       <ResponsiveContainer width="100%" height={220}>
@@ -917,7 +917,7 @@ export default function StatsDetail() {
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
                       <h3 className="font-bold text-slate-900">Score Distribution</h3>
                       <p className="text-xs text-slate-500 mt-0.5 mb-4">How participants spread across score ranges (% of max possible)</p>
                       <ResponsiveContainer width="100%" height={220}>
@@ -950,13 +950,13 @@ export default function StatsDetail() {
 
               {/* Top 5 preview */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <h3 className="font-bold text-slate-900">Top Participants</h3>
                   <button onClick={() => setActiveTab('Leaderboard')} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Full leaderboard →</button>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {participants.slice(0, 5).map(p => (
-                    <div key={p.id} className="px-6 py-3.5 flex items-center gap-4 hover:bg-slate-50/60 cursor-pointer transition-colors" onClick={() => setSelectedParticipant(p)}>
+                    <div key={p.id} className="px-4 sm:px-6 py-3.5 flex items-center gap-4 hover:bg-slate-50/60 cursor-pointer transition-colors" onClick={() => setSelectedParticipant(p)}>
                       <span className={`w-6 text-sm font-bold tabular-nums text-center ${p.rank! <= 3 ? 'text-amber-500' : 'text-slate-400'}`}>
                         {p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}
                       </span>
@@ -973,7 +973,7 @@ export default function StatsDetail() {
           {/* ── LEADERBOARD (merged with participants) ── */}
           {activeTab === 'Leaderboard' && (
             <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900">Leaderboard</h3>
                   <p className="text-xs text-slate-500 mt-0.5">Click any row to view full submission history and code</p>
@@ -990,17 +990,17 @@ export default function StatsDetail() {
                     <table className="w-full text-left">
                       <thead>
                         <tr className="bg-slate-50/80 border-b border-slate-200">
-                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest w-12">Rank</th>
-                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Participant</th>
+                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest w-12 whitespace-nowrap">Rank</th>
+                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Participant</th>
                           {problems.map((p, i) => (
-                            <th key={p.id} className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">
+                            <th key={p.id} className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">
                               {String.fromCharCode(65+i)}
                               <span className="block text-[10px] text-slate-300 normal-case font-normal">{p.maxScore}pts</span>
                             </th>
                           ))}
-                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Subs</th>
-                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Total</th>
-                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last Submit</th>
+                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Subs</th>
+                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Total</th>
+                          <th className="px-4 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Last Submit</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -1103,7 +1103,7 @@ export default function StatsDetail() {
                   return (
                     <div key={ps.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                       {/* Header */}
-                      <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                      <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex flex-wrap items-center gap-3">
                         <span className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-base font-bold text-slate-700 shrink-0">{ps.label}</span>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-slate-900 truncate">{ps.name}</h3>
@@ -1113,14 +1113,14 @@ export default function StatsDetail() {
                       </div>
 
                       {/* Core stats row */}
-                      <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x divide-slate-100 border-b border-slate-100">
                         {[
                           { label: 'Attempted',   value: `${ps.attempted} / ${ps.totalParticipants}` },
                           { label: 'Solved (AC)', value: `${ps.solved} (${ps.solveRate}%)` },
                           { label: 'Avg Score',   value: `${ps.avgScore} pts` },
                           { label: 'First Solve', value: ps.firstSolveBy, sub: ps.firstSolveTime },
                         ].map(s => (
-                          <div key={s.label} className="px-6 py-4">
+                          <div key={s.label} className="px-4 sm:px-6 py-4">
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{s.label}</p>
                             <p className="text-lg font-bold text-slate-800 mt-1 tabular-nums">{s.value}</p>
                             {s.sub && <p className="text-xs text-slate-400 tabular-nums">{s.sub}</p>}
@@ -1129,14 +1129,14 @@ export default function StatsDetail() {
                       </div>
 
                       {/* Diagnostic metrics row */}
-                      <div className="grid grid-cols-4 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/40">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/40">
                         {[
                           { icon: '⚡', label: 'Friction Score',  value: ps.frictionScore,                                          desc: 'submissions per AC',         alert: Number(ps.frictionScore) > 4 },
                           { icon: '🚪', label: 'Abandonment',     value: `${ps.abandonRate}%`,                                      desc: 'tried but never solved',     alert: ps.abandonRate > 60 },
                           { icon: '⏱', label: 'Median Solve',    value: ps.medianSolveMin !== null ? `${ps.medianSolveMin} min` : '—', desc: 'minutes into contest',    alert: false },
                           { icon: '🐢', label: 'TLE Rate',        value: `${ps.tleRate}%`,                                          desc: 'of all submissions',         alert: ps.tleRate > 30 },
                         ].map(s => (
-                          <div key={s.label} className="px-6 py-3.5">
+                          <div key={s.label} className="px-4 sm:px-6 py-3.5">
                             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                               <span>{s.icon}</span>{s.label}
                             </p>
@@ -1148,7 +1148,7 @@ export default function StatsDetail() {
 
                       {/* Charts: verdict breakdown + attempts histogram */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-                        <div className="p-6">
+                        <div className="p-4 sm:p-6">
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Verdict Breakdown</p>
                           {verdictRows.length === 0 ? (
                             <p className="text-sm text-slate-400">No submissions</p>
@@ -1169,7 +1169,7 @@ export default function StatsDetail() {
                           )}
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-4 sm:p-6">
                           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Submission Attempts per Participant</p>
                           <p className="text-[10px] text-slate-400 mb-3">How many tries participants needed (includes failed attempts)</p>
                           <ResponsiveContainer width="100%" height={110}>
@@ -1200,7 +1200,7 @@ export default function StatsDetail() {
                 })}
 
                 {/* 3. Language Performance */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
                   <h3 className="font-bold text-slate-900 mb-0.5">Language Performance</h3>
                   <p className="text-xs text-slate-500 mb-5">AC rate by language across all problems — a low Python/JS rate often means the time limit is too strict for interpreted languages</p>
                   <ResponsiveContainer width="100%" height={220}>
@@ -1254,7 +1254,7 @@ export default function StatsDetail() {
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-200">
                         {['Time','Participant','Problem','Language','Verdict','Score'].map(h => (
-                          <th key={h} className={`px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest ${h==='Score'?'text-right':''}`}>{h}</th>
+                          <th key={h} className={`px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap ${h==='Score'?'text-right':''}`}>{h}</th>
                         ))}
                       </tr>
                     </thead>

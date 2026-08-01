@@ -35,7 +35,7 @@ export default function SubmissionList({ rows, openId, details, pending, onToggl
   }
 
   return (
-    <div className="flex flex-col gap-2 px-6 py-4">
+    <div className="flex flex-col gap-2 px-4 sm:px-6 py-4">
       {rows.map(row => {
         const isOpen = openId === row.id
         const detail = details[row.id]
@@ -47,12 +47,12 @@ export default function SubmissionList({ rows, openId, details, pending, onToggl
               row.invalidated ? 'border-rose-200 bg-rose-50/40' : 'border-slate-200 bg-white'
             }`}
           >
-            <div className="flex items-center gap-4 px-5 py-3.5">
+            <div className="flex flex-wrap items-center gap-4 px-4 sm:px-5 py-3.5">
               <button
                 onClick={() => onToggleOpen(row.id)}
-                className="flex-1 flex items-center gap-4 text-left min-w-0"
+                className="flex-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-left min-w-0"
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                   <p className="text-sm font-semibold text-slate-800 truncate">{row.problemName}</p>
                   <p className="text-xs text-slate-400 mt-0.5 truncate">
                     {row.weekTitle ? `${row.weekTitle} - ` : ''}{new Date(row.submittedAt).toLocaleString()}

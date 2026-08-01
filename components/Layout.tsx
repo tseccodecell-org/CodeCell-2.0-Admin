@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { adminLogout } from '@/lib/auth'
@@ -56,6 +57,11 @@ const navSections = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
 
   async function logout() {
     await adminLogout()
@@ -64,7 +70,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <aside className="w-60 bg-white border-r border-slate-200 flex flex-col shrink-0 fixed top-0 left-0 h-full z-10">
+      <div
+        onClick={() => setOpen(false)}
+        className={`fixed inset-0 bg-slate-900/40 z-20 lg:hidden ${open ? 'block' : 'hidden'}`}
+      />
+
+      <aside
+        className={`w-60 bg-white border-r border-slate-200 flex flex-col shrink-0 fixed top-0 left-0 h-full z-30 transition-transform lg:translate-x-0 ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="h-14 flex items-center gap-3 px-5 border-b border-slate-200">
           <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center shrink-0">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +136,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 ml-60 flex flex-col min-w-0 min-h-screen">
+      <main className="flex-1 lg:ml-60 flex flex-col min-w-0 min-h-screen">
+        <div className="h-14 bg-white border-b border-slate-200 flex items-center gap-3 px-4 shrink-0 lg:hidden sticky top-0 z-10">
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            className="p-2 -ml-2 rounded-md text-slate-600 hover:bg-slate-100"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <p className="text-sm font-bold text-slate-900">Cell Admin</p>
+        </div>
+
         {children}
       </main>
     </div>

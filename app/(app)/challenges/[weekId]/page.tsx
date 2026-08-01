@@ -103,14 +103,14 @@ type FormRowProps = {
 
 function FormRow({ label, required, hint, children }: FormRowProps) {
   return (
-    <div className="flex items-start gap-6 py-4 border-b border-slate-100 last:border-0">
-      <div className="w-40 shrink-0 pt-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-6 py-4 border-b border-slate-100 last:border-0">
+      <div className="w-full sm:w-40 shrink-0 sm:pt-2">
         <span className="text-sm font-semibold text-slate-700">
           {label}
           {required && <span className="text-rose-500 ml-0.5">*</span>}
         </span>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         {children}
         {hint && <p className="text-xs text-slate-400 mt-1.5">{hint}</p>}
       </div>
@@ -203,7 +203,7 @@ export default function WeekDetail() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Breadcrumb */}
-      <div className="h-16 bg-white border-b border-slate-200/80 flex items-center px-8 gap-2 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200/80 flex flex-wrap items-center px-4 sm:px-8 py-3 sm:py-0 gap-2 shrink-0">
         <Link href="/challenges" className="text-sm text-slate-400 hover:text-slate-700 transition-colors font-medium">
           Weekly Challenges
         </Link>
@@ -214,13 +214,13 @@ export default function WeekDetail() {
       </div>
 
       {/* Contest header + tab bar */}
-      <div className="bg-white border-b border-slate-200 px-8 pt-6 pb-0 shrink-0">
-        <div className="flex items-start justify-between mb-5">
-          <div>
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-8 pt-6 pb-0 shrink-0">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-5">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-slate-900">{week.title}</h1>
-            <p className="text-sm text-slate-400 mt-0.5 font-mono">cell-contest.com/{slug}</p>
+            <p className="text-sm text-slate-400 mt-0.5 font-mono break-all">cell-contest.com/{slug}</p>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <div className="text-center px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
               <p className="text-xl font-bold text-slate-900 tabular-nums">{week.problems.length}</p>
               <p className="text-[11px] text-slate-500 mt-0.5">Challenges</p>
@@ -263,7 +263,7 @@ export default function WeekDetail() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex items-end">
+        <div className="flex items-end overflow-x-auto">
           {TABS.map(tab => (
             <button
               key={tab}
@@ -281,7 +281,7 @@ export default function WeekDetail() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 sm:p-8 overflow-auto">
 
         {/* ── Details ── */}
         {activeTab === 'Details' && (
@@ -320,7 +320,7 @@ export default function WeekDetail() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100 px-2">
               <FormRow label="Contest Name" required>
                 <input
-                  className={`${fieldCls} w-64`}
+                  className={`${fieldCls} w-full sm:w-64`}
                   value={details.title}
                   onChange={e => update({ title: e.target.value })}
                   placeholder="Contest name"
@@ -367,7 +367,7 @@ export default function WeekDetail() {
               </FormRow>
             </div>
 
-            <div className="flex items-center justify-end gap-3 mt-4">
+            <div className="flex flex-wrap items-center justify-end gap-3 mt-4">
               {saveState === 'saved' && <span className="text-xs font-semibold text-emerald-600">Saved</span>}
               {saveState === 'error' && <span className="text-xs font-semibold text-rose-600">Could not save. Try again.</span>}
               {incomplete && !rangeError && <span className="text-xs text-slate-400">Name, start and end are all required.</span>}
@@ -416,19 +416,20 @@ export default function WeekDetail() {
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200">
-                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest w-16">No.</th>
-                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Name</th>
-                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Difficulty</th>
-                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest w-16 whitespace-nowrap">No.</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Name</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Difficulty</th>
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
                         Base Points <InfoIcon />
                       </th>
-                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
                         Binary <InfoIcon />
                       </th>
-                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
                         Editorial <InfoIcon />
                       </th>
                       <th className="px-6 py-3.5 text-right" />
@@ -496,6 +497,7 @@ export default function WeekDetail() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </div>

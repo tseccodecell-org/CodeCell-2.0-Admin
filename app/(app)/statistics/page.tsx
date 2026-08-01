@@ -69,11 +69,11 @@ export default function StatsList() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header with inline KPI strip */}
-      <div className="h-16 bg-white border-b border-slate-200/80 flex items-center justify-between px-8 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-8 py-3 sm:py-0 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-base font-bold text-slate-900">Analytics</h1>
         </div>
-        <div className="flex items-center divide-x divide-slate-200">
+        <div className="flex flex-wrap items-center divide-x divide-slate-200">
           {[
             { label: 'Contests',     value: weeks.length,                       color: 'text-slate-900' },
             { label: 'Active',       value: activeContests,                     color: 'text-emerald-600' },
@@ -88,9 +88,9 @@ export default function StatsList() {
         </div>
       </div>
 
-      <div className="flex-1 px-8 py-6 flex flex-col gap-6">
+      <div className="flex-1 px-4 sm:px-8 py-6 flex flex-col gap-6">
         {/* ── Participation trend ── */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
           <div className="mb-5">
             <h2 className="font-bold text-slate-900">Participation Trend</h2>
             <p className="text-xs text-slate-500 mt-0.5">How participant count and submissions are growing or declining across contests</p>
@@ -134,7 +134,7 @@ export default function StatsList() {
         {/* ── Difficulty solve rates ── */}
         {/* Contest table */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <h2 className="font-bold text-slate-900">All Contests</h2>
             <p className="text-xs text-slate-500 mt-0.5">Click a row to drill into full contest analytics</p>
           </div>
@@ -145,11 +145,12 @@ export default function StatsList() {
               <p className="text-xs">Create a weekly challenge to start tracking analytics</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200">
                   {['Contest','Status','Problems','Participants','Submissions','Avg Score','Top Score','Schedule'].map(h => (
-                    <th key={h} className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{h}</th>
+                    <th key={h} className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -195,6 +196,7 @@ export default function StatsList() {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

@@ -133,15 +133,15 @@ export default function EventList() {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+      <div className="h-auto sm:h-16 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-8 py-3 sm:py-0 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-base font-bold text-slate-900">Events</h1>
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
             {events.length}
           </span>
         </div>
-        <div className="flex items-center gap-2.5">
-          <div className="relative">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
             <svg className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -149,12 +149,12 @@ export default function EventList() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search..."
-              className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-48 focus:outline-none focus:border-slate-400 bg-slate-50"
+              className="pl-8 pr-4 py-2 text-sm border border-slate-200 rounded-lg w-full sm:w-48 focus:outline-none focus:border-slate-400 bg-slate-50"
             />
           </div>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+            className="flex items-center gap-2 shrink-0 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2 rounded-lg"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -164,7 +164,7 @@ export default function EventList() {
         </div>
       </div>
 
-      <div className="px-8 py-3 border-b border-slate-200 bg-white flex items-center gap-4">
+      <div className="px-4 sm:px-8 py-3 border-b border-slate-200 bg-white flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="text-xs text-slate-500">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
         <span className="text-slate-200">·</span>
         <span className="text-xs text-slate-500">
@@ -174,7 +174,7 @@ export default function EventList() {
         <span className="text-xs text-slate-500">Timed CP/DSA contests · Click a card to manage problems</span>
       </div>
 
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 sm:p-8">
         {filtered.length === 0 ? (
           <div className="bg-white rounded-lg border border-slate-200 flex flex-col items-center justify-center py-24 text-slate-400 gap-3">
             <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center mb-1">
