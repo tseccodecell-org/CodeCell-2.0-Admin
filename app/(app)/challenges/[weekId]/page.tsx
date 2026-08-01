@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useData } from '@/context/DataContext'
 import Countdown from '@/components/Countdown'
 import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
+import NotifyPanel from '@/components/NotifyPanel'
 
 const DIFF_COLORS: Record<string, string> = {
   Easy: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
@@ -14,7 +15,7 @@ const DIFF_COLORS: Record<string, string> = {
 }
 
 
-const TABS = ['Details', 'Challenges', 'Statistics']
+const TABS = ['Details', 'Challenges', 'Notifications']
 
 const fieldCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white'
 
@@ -559,35 +560,8 @@ export default function WeekDetail() {
           </div>
         )}
 
-        {/* ── Statistics ── */}
-        {activeTab === 'Statistics' && (
-          <div>
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Statistics</h2>
-              <p className="text-sm text-slate-500 mt-1">Submission and participation data for this contest.</p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {[
-                { label: 'Total Signups', value: '0', icon: '👥' },
-                { label: 'Submissions', value: '0', icon: '📨' },
-                { label: 'Unique Solvers', value: '0', icon: '✅' },
-                { label: 'Avg. Score', value: '—', icon: '📊' },
-              ].map(s => (
-                <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 text-center">
-                  <p className="text-3xl font-bold text-slate-900 tabular-nums">{s.value}</p>
-                  <p className="text-xs text-slate-500 mt-1.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center py-24 gap-2">
-              <svg className="w-10 h-10 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <p className="text-sm text-slate-400 mt-1">No submission data available yet</p>
-            </div>
-          </div>
+        {activeTab === 'Notifications' && (
+          <NotifyPanel weekId={week.id} problems={week.problems} />
         )}
 
       </div>
