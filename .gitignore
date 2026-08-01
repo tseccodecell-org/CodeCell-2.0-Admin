@@ -1,5 +1,6 @@
 # Logs
-logs
+# anchored, otherwise this also swallows app routes such as app/(app)/logs
+/logs
 *.log
 npm-debug.log*
 yarn-debug.log*
