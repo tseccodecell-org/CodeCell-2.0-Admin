@@ -215,6 +215,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       await api('POST', `/api/admin/problems/${problemId}/testcases`, {
         input: tc.input,
         expectedOutput: tc.output,
+        explanation: tc.explanation || '',
         isSample: !!tc.isSample,
       })
     }
@@ -283,6 +284,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       await api('POST', `/api/admin/problems/${problemId}/testcases`, {
         input: tc.input,
         expectedOutput: tc.output,
+        explanation: tc.explanation || '',
         isSample: !!tc.isSample,
       })
     }
@@ -315,6 +317,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     await api('PATCH', `/api/admin/problems/${problemId}/testcases/${testcaseId}`, {
       input: tc.input,
       expectedOutput: tc.output,
+      explanation: tc.explanation || '',
       isSample: !!tc.isSample,
     })
   }

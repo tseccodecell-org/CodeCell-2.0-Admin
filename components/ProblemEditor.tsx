@@ -69,10 +69,11 @@ const emptyProblem: ProblemFormData = {
 interface TcFormData {
   input: string
   output: string
+  explanation: string
   isSample: boolean
 }
 
-const emptyTcForm: TcFormData = { input: '', output: '', isSample: false }
+const emptyTcForm: TcFormData = { input: '', output: '', explanation: '', isSample: false }
 
 /* ── Small components ─────────────────────────────────── */
 function TipIcon() {
@@ -390,7 +391,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
       try {
         const tcs = await getTestCases(problemId) as any[]
         testCases = tcs.map(tc => ({
-          id: tc.id, input: tc.input, output: tc.expectedOutput, isSample: tc.isSample,
+          id: tc.id, input: tc.input, output: tc.expectedOutput, explanation: tc.explanation || '', isSample: tc.isSample,
           existing: true, // already in the db — deleting it calls the api directly
         }))
         const configs = await getLanguageConfigs(problemId)
@@ -447,7 +448,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
       setProblem(p => ({
         ...p,
         testCases: tcs.map(tc => ({
-          id: tc.id, input: tc.input, output: tc.expectedOutput, isSample: tc.isSample, existing: true,
+          id: tc.id, input: tc.input, output: tc.expectedOutput, explanation: tc.explanation || '', isSample: tc.isSample, existing: true,
         })),
       }))
     } catch {
@@ -458,7 +459,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
   const slug = problem.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 
   function openTcEdit(tc: TestCase) {
-    setTcForm({ input: tc.input, output: tc.output, isSample: tc.isSample })
+    setTcForm({ input: tc.input, output: tc.output, explanation: tc.explanation || '', isSample: tc.isSample })
     setEditingTcId(tc.id)
     setShowTcModal(true)
   }
@@ -481,7 +482,7 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
       setProblem(p => ({
         ...p,
         testCases: p.testCases.map(t => t.id === editingTcId
-          ? { ...t, input: tcForm.input, output: tcForm.output, isSample: tcForm.isSample }
+          ? { ...t, input: tcForm.input, output: tcForm.output, explanation: tcForm.explanation, isSample: tcForm.isSample }
           : t),
       }))
     } else {
@@ -965,6 +966,20 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
                   onChange={e => setTc('isSample', e.target.checked)}
                   className="w-4 h-4 accent-blue-600 cursor-pointer" />
               </label>
+
+              {tcForm.isSample && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Explanation</label>
+                  <textarea
+                    value={tcForm.explanation}
+                    onChange={e => setTc('explanation', e.target.value)}
+                    rows={3}
+                    placeholder="Why this input produces this output. Shown to participants under the sample."
+                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:border-slate-400 resize-y"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Only samples show an explanation.</p>
+                </div>
+              )}
             </div>
             <div className="px-4 sm:px-6 py-4 border-t border-slate-100 flex justify-center">
               <button onClick={saveTestCase}

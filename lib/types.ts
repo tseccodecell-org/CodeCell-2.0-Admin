@@ -5,6 +5,7 @@ export interface TestCase {
   id: string | number
   input: string
   output: string
+  explanation?: string // shown beside a sample so participants see the reasoning
   isSample: boolean
   existing?: boolean // true once it's saved in the db (edit flow)
 }
