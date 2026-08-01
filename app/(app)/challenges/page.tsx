@@ -11,13 +11,14 @@ const inputCls = 'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg 
 
 type CreateForm = {
   title: string
+  description: string
   startDate: string
   startTime: string
   endDate: string
   endTime: string
 }
 
-const emptyForm: CreateForm = { title: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00' }
+const emptyForm: CreateForm = { title: '', description: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00' }
 
 function formatDuration(start: Date | null, end: Date | null) {
   if (!start || !end) return null
@@ -230,6 +231,14 @@ export default function ChallengeList() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Week Title</label>
                 <input className={inputCls} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   placeholder="e.g. Biweekly Challenge 7" required />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</label>
+                <p className="text-xs text-slate-400 mb-2">Shown under the week&apos;s name on the participant timeline.</p>
+                <textarea className={`${inputCls} resize-y`} rows={3} value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder="What this week is about" />
               </div>
 
               <div>
