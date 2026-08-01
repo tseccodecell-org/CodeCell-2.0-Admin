@@ -46,7 +46,11 @@ export default function EventDetail() {
       body: `"${current.title}" goes live and participants can begin submitting immediately.`,
       confirmLabel: 'Start contest',
       tone: 'neutral',
-      consequences: [`${current.problems.length} problems become visible`],
+      typeToConfirm: current.title,
+      consequences: [
+        `${current.problems.length} problems become visible`,
+        'Submissions start counting towards the leaderboard',
+      ],
       onConfirm: () => updateEvent(current.id, { status: 'live' }),
     })
   }

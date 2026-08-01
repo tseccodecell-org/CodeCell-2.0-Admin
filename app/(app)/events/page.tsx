@@ -3,57 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useData } from '@/context/DataContext'
+import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 import type { EventItem } from '@/lib/types'
 
 const STATUS_META: Record<string, { label: string; dot: string; badge: string }> = {
   upcoming: { label: 'Upcoming', dot: 'bg-slate-400', badge: 'bg-slate-100 text-slate-500' },
   live:     { label: 'Live',     dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60' },
   ended:    { label: 'Ended',    dot: 'bg-rose-400',    badge: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/60' },
-}
-
-interface ConfirmModalProps {
-  title: string
-  description: string
-  confirmLabel: string
-  danger?: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function ConfirmModal({ title, description, confirmLabel, danger = false, onConfirm, onCancel }: ConfirmModalProps) {
-  return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm border border-slate-200">
-        <div className="p-6 flex flex-col gap-3">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1 ${danger ? 'bg-rose-50' : 'bg-amber-50'}`}>
-            {danger ? (
-              <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            )}
-          </div>
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
-        </div>
-        <div className="flex gap-2 px-6 pb-6">
-          <button onClick={onCancel}
-            className="flex-1 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">
-            Cancel
-          </button>
-          <button onClick={onConfirm}
-            className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg ${
-              danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}>
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 interface EventFormState {
@@ -63,21 +19,13 @@ interface EventFormState {
   durationHours: number | string
 }
 
-interface ConfirmState {
-  title: string
-  description: string
-  confirmLabel: string
-  danger: boolean
-  onConfirm: () => void
-}
-
 export default function EventList() {
   const { events, addEvent, updateEvent, deleteEvent } = useData()
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState<EventFormState>({ title: '', startDate: '', startTime: '10:00', durationHours: 3 })
-  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
+  const [confirmState, setConfirmState] = useState<ConfirmRequest | null>(null)
 
   const filtered = events.filter(e => e.title.toLowerCase().includes(search.toLowerCase()))
   const liveCount = events.filter(e => e.status === 'live').length
@@ -94,33 +42,48 @@ export default function EventList() {
   function askStart(e: React.MouseEvent, event: EventItem) {
     e.stopPropagation()
     setConfirmState({
-      title: `Start "${event.title}"?`,
-      description: 'This will make the contest live. Participants can begin submitting immediately.',
-      confirmLabel: 'Start Contest',
-      danger: false,
-      onConfirm: () => { updateEvent(event.id, { status: 'live' }); setConfirmState(null) },
+      title: 'Start this contest',
+      body: `"${event.title}" goes live and participants can begin submitting immediately.`,
+      confirmLabel: 'Start contest',
+      tone: 'neutral',
+      typeToConfirm: event.title,
+      consequences: [
+        `${event.problems.length} problems become visible`,
+        'Submissions start counting towards the leaderboard',
+      ],
+      onConfirm: () => updateEvent(event.id, { status: 'live' }),
     })
   }
 
   function askEnd(e: React.MouseEvent, event: EventItem) {
     e.stopPropagation()
     setConfirmState({
-      title: `End "${event.title}"?`,
-      description: 'This will close all submissions for participants. This action cannot be reversed.',
-      confirmLabel: 'End Contest',
-      danger: true,
-      onConfirm: () => { updateEvent(event.id, { status: 'ended' }); setConfirmState(null) },
+      title: 'End this contest',
+      body: `"${event.title}" will close for every participant.`,
+      confirmLabel: 'End contest',
+      tone: 'danger',
+      typeToConfirm: event.title,
+      consequences: [
+        'Submissions close immediately',
+        'This cannot be reversed from the panel',
+      ],
+      onConfirm: () => updateEvent(event.id, { status: 'ended' }),
     })
   }
 
   function askDelete(e: React.MouseEvent, event: EventItem) {
     e.stopPropagation()
     setConfirmState({
-      title: `Delete "${event.title}"?`,
-      description: 'This will permanently delete the contest and all its problems. This cannot be undone.',
-      confirmLabel: 'Delete Event',
-      danger: true,
-      onConfirm: () => { deleteEvent(event.id); setConfirmState(null) },
+      title: 'Delete this event',
+      body: `"${event.title}" and everything under it will be removed.`,
+      confirmLabel: 'Delete event',
+      tone: 'danger',
+      typeToConfirm: event.title,
+      consequences: [
+        `${event.problems.length} problems go with it`,
+        'This cannot be undone',
+      ],
+      onConfirm: () => deleteEvent(event.id),
     })
   }
 
@@ -361,14 +324,7 @@ export default function EventList() {
       )}
 
       {confirmState && (
-        <ConfirmModal
-          title={confirmState.title}
-          description={confirmState.description}
-          confirmLabel={confirmState.confirmLabel}
-          danger={confirmState.danger}
-          onConfirm={confirmState.onConfirm}
-          onCancel={() => setConfirmState(null)}
-        />
+        <ConfirmModal request={confirmState} onCancel={() => setConfirmState(null)} />
       )}
     </div>
   )
