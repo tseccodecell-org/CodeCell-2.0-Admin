@@ -103,7 +103,11 @@ export default function ChallengeList() {
       body: `"${week.title}" goes live and participants can start submitting straight away.`,
       confirmLabel: 'Activate',
       tone: 'neutral',
-      consequences: [`${week.problems.length} problems become visible`],
+      typeToConfirm: week.title,
+      consequences: [
+        `${week.problems.length} problems become visible`,
+        'Submissions start counting towards the leaderboard',
+      ],
       onConfirm: () => updateWeek(week.id, { active: true }),
     })
   }
