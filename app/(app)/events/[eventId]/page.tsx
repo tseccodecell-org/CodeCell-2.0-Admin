@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useData } from '@/context/DataContext'
+import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 
 const DIFF_COLORS: Record<string, string> = {
   Easy: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
@@ -17,64 +18,11 @@ const STATUS_META: Record<string, { label: string; dot: string; badge: string }>
   ended:    { label: 'Ended',    dot: 'bg-rose-400',     badge: 'bg-rose-50 text-rose-600 ring-1 ring-rose-200/60' },
 }
 
-interface ConfirmModalProps {
-  title: string
-  description: string
-  confirmLabel: string
-  danger?: boolean
-  onConfirm: () => void
-  onCancel: () => void
-}
-
-function ConfirmModal({ title, description, confirmLabel, danger = false, onConfirm, onCancel }: ConfirmModalProps) {
-  return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-sm border border-slate-200">
-        <div className="p-6 flex flex-col gap-3">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center mb-1 ${danger ? 'bg-rose-50' : 'bg-amber-50'}`}>
-            {danger ? (
-              <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            )}
-          </div>
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
-        </div>
-        <div className="flex gap-2 px-6 pb-6">
-          <button onClick={onCancel}
-            className="flex-1 py-2.5 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">
-            Cancel
-          </button>
-          <button onClick={onConfirm}
-            className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-lg ${
-              danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}>
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface ConfirmState {
-  title: string
-  description: string
-  confirmLabel: string
-  danger: boolean
-  onConfirm: () => void
-}
-
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>()
   const router = useRouter()
   const { events, deleteEventProblem, updateEvent } = useData()
-  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
+  const [confirmState, setConfirmState] = useState<ConfirmRequest | null>(null)
   const event = events.find(e => e.id === Number(eventId))
 
   if (!event) return (
@@ -94,21 +42,39 @@ export default function EventDetail() {
 
   function askStart() {
     setConfirmState({
-      title: `Start "${current.title}"?`,
-      description: 'This will make the contest live. Participants can begin submitting immediately.',
-      confirmLabel: 'Start Contest',
-      danger: false,
-      onConfirm: () => { updateEvent(current.id, { status: 'live' }); setConfirmState(null) },
+      title: 'Start this contest',
+      body: `"${current.title}" goes live and participants can begin submitting immediately.`,
+      confirmLabel: 'Start contest',
+      tone: 'neutral',
+      consequences: [`${current.problems.length} problems become visible`],
+      onConfirm: () => updateEvent(current.id, { status: 'live' }),
     })
   }
 
   function askEnd() {
     setConfirmState({
-      title: `End "${current.title}"?`,
-      description: 'This will close all submissions for participants. This action cannot be reversed.',
-      confirmLabel: 'End Contest',
-      danger: true,
-      onConfirm: () => { updateEvent(current.id, { status: 'ended' }); setConfirmState(null) },
+      title: 'End this contest',
+      body: `"${current.title}" will close for every participant.`,
+      confirmLabel: 'End contest',
+      tone: 'danger',
+      typeToConfirm: current.title,
+      consequences: [
+        'Submissions close immediately',
+        'This cannot be reversed from the panel',
+      ],
+      onConfirm: () => updateEvent(current.id, { status: 'ended' }),
+    })
+  }
+
+  function askDeleteProblem(problemId: string | number, problemName: string) {
+    setConfirmState({
+      title: 'Remove this problem',
+      body: `"${problemName}" will be removed from this event.`,
+      confirmLabel: 'Remove problem',
+      tone: 'danger',
+      typeToConfirm: problemName,
+      consequences: ['Existing submissions for it are kept but stop counting'],
+      onConfirm: () => deleteEventProblem(current.id, problemId),
     })
   }
 
@@ -241,7 +207,7 @@ export default function EventDetail() {
                     <td className="px-6 py-4 text-sm text-slate-500 font-mono tabular-nums">{p.timeLimit}s</td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => { if (confirm('Delete this problem?')) deleteEventProblem(event.id, p.id) }}
+                        onClick={() => askDeleteProblem(p.id, p.name)}
                         className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,14 +225,7 @@ export default function EventDetail() {
       </div>
 
       {confirmState && (
-        <ConfirmModal
-          title={confirmState.title}
-          description={confirmState.description}
-          confirmLabel={confirmState.confirmLabel}
-          danger={confirmState.danger}
-          onConfirm={confirmState.onConfirm}
-          onCancel={() => setConfirmState(null)}
-        />
+        <ConfirmModal request={confirmState} onCancel={() => setConfirmState(null)} />
       )}
     </div>
   )

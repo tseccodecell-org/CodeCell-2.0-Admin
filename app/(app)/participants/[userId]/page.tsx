@@ -325,7 +325,7 @@ export default function ParticipantDetail() {
     if (action.kind === 'invalidate') {
       return {
         title: 'Invalidate submission',
-        body: `This submission to ${action.row.problemName} stops counting towards the score and the leaderboard right away. The score recalculation will not undo it.`,
+        body: `This voids every accepted submission ${who} has for ${action.row.problemName}, so the problem drops to zero points. The score and the leaderboard update right away.`,
         label: 'Why is it being invalidated?',
         placeholder: 'Identical to another participant character for character.',
         confirmLabel: 'Invalidate',

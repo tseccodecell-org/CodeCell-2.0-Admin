@@ -517,7 +517,7 @@ export default function StatsDetail() {
           title={action.kind === 'invalidate' ? 'Invalidate submission' : 'Restore submission'}
           body={
             action.kind === 'invalidate'
-              ? `This removes the score for ${action.row.username} on ${action.row.problemName}. The participant can see the reason.`
+              ? `This voids every accepted submission ${action.row.username} has for ${action.row.problemName}, so the problem drops to zero points. The participant can see the reason.`
               : `This puts the score for ${action.row.username} on ${action.row.problemName} back.`
           }
           label={action.kind === 'invalidate' ? 'Reason' : undefined}

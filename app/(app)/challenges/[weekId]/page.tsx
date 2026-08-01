@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useData } from '@/context/DataContext'
 import Countdown from '@/components/Countdown'
+import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 
 const DIFF_COLORS: Record<string, string> = {
   Easy: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
@@ -138,6 +139,7 @@ export default function WeekDetail() {
     title: '', startDate: '', startTime: '10:00', endDate: '', endTime: '10:00',
   })
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
 
   const loadedId = week?.id
   const loadedTitle = week?.title
@@ -193,11 +195,61 @@ export default function WeekDetail() {
     }
   }
 
-  async function handleDelete() {
-    if (confirm(`Delete "${week!.title}"? This will remove the week and its problems.`)) {
-      await deleteWeek(week!.id)
-      router.push('/challenges')
+  function handleDelete() {
+    setConfirmRequest({
+      title: 'Delete this week',
+      body: `"${week!.title}" and everything under it will be removed.`,
+      confirmLabel: 'Delete week',
+      tone: 'danger',
+      typeToConfirm: week!.title,
+      consequences: [
+        `${week!.problems.length} problems go with it`,
+        'Submissions and leaderboard history are kept',
+      ],
+      onConfirm: async () => {
+        await deleteWeek(week!.id)
+        router.push('/challenges')
+      },
+    })
+  }
+
+  function handleToggleActive() {
+    if (week!.active) {
+      setConfirmRequest({
+        title: 'Deactivate this week',
+        body: `"${week!.title}" will stop being visible to participants and they will not be able to submit.`,
+        confirmLabel: 'Deactivate',
+        tone: 'danger',
+        typeToConfirm: week!.title,
+        consequences: [
+          'Participants lose access to its problems',
+          'The scheduler will not put it back live on its own',
+        ],
+        onConfirm: () => updateWeek(week!.id, { active: false }),
+      })
+      return
     }
+
+    setConfirmRequest({
+      title: 'Activate this week',
+      body: `"${week!.title}" goes live and participants can start submitting straight away.`,
+      confirmLabel: 'Activate',
+      tone: 'neutral',
+      consequences: [`${week!.problems.length} problems become visible`],
+      onConfirm: () => updateWeek(week!.id, { active: true }),
+    })
+  }
+
+  function handleDeleteProblem(problemId: string | number, problemName: string) {
+    setConfirmRequest({
+      title: 'Remove this problem',
+      body: `"${problemName}" will be removed from this week.`,
+      confirmLabel: 'Remove problem',
+      tone: 'danger',
+      typeToConfirm: problemName,
+      consequences: ['Existing submissions for it are kept but stop counting'],
+      onConfirm: () => deleteProblem(week!.id, problemId),
+    })
   }
 
   return (
@@ -248,7 +300,7 @@ export default function WeekDetail() {
               />
             )}
             <button
-              onClick={() => updateWeek(week.id, { active: !week.active })}
+              onClick={handleToggleActive}
               className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-colors"
             >
               {week.active ? 'Deactivate' : 'Activate'}
@@ -484,7 +536,7 @@ export default function WeekDetail() {
                               </svg>
                             </button>
                             <button
-                              onClick={() => { if (confirm('Remove this challenge?')) deleteProblem(week.id, p.id) }}
+                              onClick={() => handleDeleteProblem(p.id, p.name)}
                               className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -535,6 +587,10 @@ export default function WeekDetail() {
         )}
 
       </div>
+
+      {confirmRequest && (
+        <ConfirmModal request={confirmRequest} onCancel={() => setConfirmRequest(null)} />
+      )}
     </div>
   )
 }
