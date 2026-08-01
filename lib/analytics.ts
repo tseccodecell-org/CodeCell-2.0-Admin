@@ -64,6 +64,59 @@ export interface WeekAnalytics {
   verdictDistribution: VerdictDistribution
 }
 
+export interface TestCaseFailure {
+  testCaseId: string
+  orderNum: number
+  isSample: boolean
+  attempts: number
+  failures: number
+  failureRate: number
+}
+
+export interface LanguageVerdict {
+  language: string
+  total: number
+  accepted: number
+  verdicts: Record<string, number>
+}
+
+export interface RuntimeStats {
+  timeLimitMs: number
+  acceptedCount: number
+  maxTimeMs: number
+  avgTimeMs: number
+  nearLimit: number
+}
+
+export interface HealthFlag {
+  severity: 'critical' | 'warning' | 'info'
+  code: string
+  message: string
+}
+
+export interface ProblemAnalytics {
+  problem: { id: string; title: string; difficulty: string; timeLimitMs: number }
+  overview: {
+    participants: number
+    acceptedUsers: number
+    acceptanceRate: number
+    totalSubmissions: number
+    averageAttempts: number
+    firstAttemptAccepted: number
+  }
+  verdictDistribution: VerdictDistribution
+  languageDistribution: { language: string; submissions: number }[]
+  attemptDistribution: Record<string, number>
+  testCaseFailures: TestCaseFailure[]
+  languageVerdicts: LanguageVerdict[]
+  runtime: RuntimeStats
+  healthFlags: HealthFlag[]
+}
+
+export function getProblemAnalytics(problemId: string) {
+  return call<ProblemAnalytics>('GET', `/api/admin/problems/${problemId}/analytics`)
+}
+
 export function getOverview() {
   return call<AnalyticsOverview>('GET', '/api/admin/analytics/overview')
 }

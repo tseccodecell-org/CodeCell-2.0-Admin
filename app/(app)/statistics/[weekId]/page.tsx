@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useData } from '@/context/DataContext'
@@ -14,6 +14,7 @@ import {
   type AdminSubmissionRow,
 } from '@/lib/moderation'
 import SubmissionList from '@/components/SubmissionList'
+import ProblemDiagnostics from '@/components/ProblemDiagnostics'
 import Pagination, { PAGE_SIZE } from '@/components/Pagination'
 import ReasonModal from '@/components/ReasonModal'
 import Toast, { type ToastState } from '@/components/Toast'
@@ -108,6 +109,7 @@ export default function StatsDetail() {
   const [action, setAction] = useState<Action | null>(null)
   const [busy, setBusy] = useState(false)
   const [toast, setToast] = useState<ToastState | null>(null)
+  const [openProblemId, setOpenProblemId] = useState<string | null>(null)
 
   const loadAnalytics = useCallback(async () => {
     if (!weekId) return
@@ -400,9 +402,21 @@ export default function StatsDetail() {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {data?.problemBreakdown.map(p => (
-                          <tr key={p.problemId} className="hover:bg-slate-50 transition-colors">
+                          <Fragment key={p.problemId}>
+                          <tr
+                            onClick={() => setOpenProblemId(openProblemId === p.problemId ? null : p.problemId)}
+                            className="hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
                             <td className="px-6 py-4">
-                              <p className="text-sm font-semibold text-slate-800">{p.title}</p>
+                              <div className="flex items-center gap-2">
+                                <svg
+                                  className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${openProblemId === p.problemId ? 'rotate-90' : ''}`}
+                                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <p className="text-sm font-semibold text-slate-800">{p.title}</p>
+                              </div>
                             </td>
                             <td className="px-6 py-4">
                               <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
@@ -426,6 +440,14 @@ export default function StatsDetail() {
                               ) : <span className="text-sm text-slate-400">none yet</span>}
                             </td>
                           </tr>
+                          {openProblemId === p.problemId && (
+                            <tr>
+                              <td colSpan={7} className="bg-slate-50/60 border-t border-slate-200 p-0">
+                                <ProblemDiagnostics problemId={p.problemId} />
+                              </td>
+                            </tr>
+                          )}
+                          </Fragment>
                         ))}
                       </tbody>
                     </table>
