@@ -3,6 +3,16 @@
 import { useState } from 'react'
 import type { Week } from '@/lib/types'
 
+// most weeks are titled "Week 3" already, so prefixing the number again reads
+// as "Week 3 - Week 3"
+function weekLabel(w: Week) {
+  const prefix = w.weekNumber ? `Week ${w.weekNumber}` : ''
+  const title = (w.title || '').trim()
+  if (!prefix) return title || 'Untitled week'
+  if (!title || title.toLowerCase() === prefix.toLowerCase()) return prefix
+  return `${prefix} - ${title}`
+}
+
 export default function MoveProblemModal({
   problemName, weeks, currentWeekId, onCancel, onConfirm,
 }: {
@@ -57,7 +67,7 @@ export default function MoveProblemModal({
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-slate-800 truncate">
-                  {w.weekNumber ? `Week ${w.weekNumber} - ` : ''}{w.title}
+                  {weekLabel(w)}
                 </span>
                 <span className="text-xs font-semibold text-slate-500 shrink-0">
                   {w.problems.length} {w.problems.length === 1 ? 'problem' : 'problems'}
@@ -71,7 +81,9 @@ export default function MoveProblemModal({
         </div>
 
         {error && (
-          <p className="px-6 pb-2 text-sm text-rose-600">{error}</p>
+          <div className="mx-6 mb-2 rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+            <p className="text-sm text-rose-700">{error}</p>
+          </div>
         )}
 
         <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">

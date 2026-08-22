@@ -41,7 +41,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // small fetch helper for the {success, data} / {success, error} envelope.
   // the admin token is an HttpOnly cookie, so every call must carry credentials
-  async function api(method: string, url: string, body?: unknown) {
+  // silent lets a caller show the failure in its own ui instead of an alert.
+  // either way the thrown error carries the server's message, not just the url
+  async function api(method: string, url: string, body?: unknown, opts?: { silent?: boolean }) {
     const res = await fetch(`${GO_API}${url}`, {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -65,9 +67,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const message =
         data.error?.message ||
         (typeof data.error === 'string' ? data.error : null) ||
-        res.status
-      alert(`${method} ${url} failed: ${message}`)
-      throw new Error(`${method} ${url} failed`)
+        `${method} ${url} failed (${res.status})`
+      if (!opts?.silent) alert(`${method} ${url} failed: ${message}`)
+      throw new Error(message)
     }
     return data
   }
@@ -276,7 +278,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }
 
   const moveProblemToWeek = async (problemId: string | number, targetWeekId: string) => {
-    await api('PATCH', `/api/admin/problems/${problemId}/week`, { weekId: targetWeekId })
+    await api('PATCH', `/api/admin/problems/${problemId}/week`, { weekId: targetWeekId }, { silent: true })
     await refreshWeeks()
   }
 
