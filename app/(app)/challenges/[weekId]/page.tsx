@@ -4,8 +4,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  DndContext, KeyboardSensor, PointerSensor, closestCenter,
-  useSensor, useSensors, type DragEndEvent,
+  DndContext, KeyboardSensor, MeasuringStrategy, PointerSensor, closestCenter,
+  useDroppable, useSensor, useSensors,
+  type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import {
@@ -17,6 +18,7 @@ import { useData } from '@/context/DataContext'
 import Countdown from '@/components/Countdown'
 import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 import NotifyPanel from '@/components/NotifyPanel'
+import MoveProblemModal from '@/components/MoveProblemModal'
 
 const DIFF_COLORS: Record<string, string> = {
   Easy: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
@@ -34,6 +36,31 @@ function GripIcon() {
       <circle cx="7" cy="10" r="1.5" /><circle cx="13" cy="10" r="1.5" />
       <circle cx="7" cy="15" r="1.5" /><circle cx="13" cy="15" r="1.5" />
     </svg>
+  )
+}
+
+const MOVE_ZONE_ID = '__move-to-week__'
+
+// only rendered mid drag, so it never takes up space the rest of the time
+function MoveToWeekZone({ otherWeekCount }: { otherWeekCount: number }) {
+  const { setNodeRef, isOver } = useDroppable({ id: MOVE_ZONE_ID })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mt-3 rounded-xl border-2 border-dashed px-6 py-6 text-center transition-colors ${
+        isOver
+          ? 'border-slate-900 bg-slate-50 text-slate-900'
+          : 'border-slate-200 bg-slate-50/40 text-slate-400'
+      }`}
+    >
+      <p className="text-sm font-semibold">Drop here to move to another week</p>
+      <p className="text-xs mt-0.5">
+        {otherWeekCount === 0
+          ? 'No other week exists yet'
+          : `${otherWeekCount} other ${otherWeekCount === 1 ? 'week' : 'weeks'} to choose from`}
+      </p>
+    </div>
   )
 }
 
@@ -175,7 +202,13 @@ type DetailsForm = {
 export default function WeekDetail() {
   const { weekId } = useParams<{ weekId: string }>()
   const router = useRouter()
-  const { weeks, deleteProblem, updateWeek, deleteWeek, refreshWeeks, reorderProblems } = useData()
+  const {
+    weeks, deleteProblem, updateWeek, deleteWeek, refreshWeeks,
+    reorderProblems, moveProblemToWeek,
+  } = useData()
+
+  const [dragging, setDragging] = useState(false)
+  const [moving, setMoving] = useState<{ id: string | number; name: string } | null>(null)
 
   // a small distance stops a plain click on a row button registering as a drag
   const sensors = useSensors(
@@ -310,9 +343,21 @@ export default function WeekDetail() {
     })
   }
 
+  function handleDragStart(_event: DragStartEvent) {
+    setDragging(true)
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
+    setDragging(false)
     const { active, over } = event
     if (!over || active.id === over.id || !week) return
+
+    // dropped on the zone instead of another row, so ask which week
+    if (over.id === MOVE_ZONE_ID) {
+      const problem = week.problems.find(p => String(p.id) === String(active.id))
+      if (problem) setMoving({ id: problem.id, name: problem.name })
+      return
+    }
 
     const ids = week.problems.map(p => String(p.id))
     const from = ids.indexOf(String(active.id))
@@ -557,6 +602,11 @@ export default function WeekDetail() {
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   modifiers={[restrictToVerticalAxis]}
+                  // the move zone only mounts once a drag starts, and a droppable
+                  // that appears mid drag is not measured unless we ask every time
+                  measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+                  onDragStart={handleDragStart}
+                  onDragCancel={() => setDragging(false)}
                   onDragEnd={handleDragEnd}
                 >
                 <table className="w-full text-left">
@@ -656,6 +706,11 @@ export default function WeekDetail() {
                     </SortableContext>
                   </tbody>
                 </table>
+                {dragging && (
+                  <div className="px-4 pb-4">
+                    <MoveToWeekZone otherWeekCount={weeks.length - 1} />
+                  </div>
+                )}
                 </DndContext>
                 </div>
               </div>
@@ -671,6 +726,19 @@ export default function WeekDetail() {
 
       {confirmRequest && (
         <ConfirmModal request={confirmRequest} onCancel={() => setConfirmRequest(null)} />
+      )}
+
+      {moving && week && (
+        <MoveProblemModal
+          problemName={moving.name}
+          weeks={weeks}
+          currentWeekId={week.id}
+          onCancel={() => setMoving(null)}
+          onConfirm={async targetWeekId => {
+            await moveProblemToWeek(moving.id, targetWeekId)
+            setMoving(null)
+          }}
+        />
       )}
     </div>
   )

@@ -275,6 +275,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     refreshWeeks()
   }
 
+  const moveProblemToWeek = async (problemId: string | number, targetWeekId: string) => {
+    await api('PATCH', `/api/admin/problems/${problemId}/week`, { weekId: targetWeekId })
+    await refreshWeeks()
+  }
+
   // the new order is shown straight away and rolled back if the save fails,
   // otherwise the row would snap back under the cursor on every drag
   const reorderProblems = async (weekId: string, problemIds: (string | number)[]) => {
@@ -385,7 +390,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       weeks, events, refreshWeeks,
       addWeek, updateWeek, deleteWeek,
-      addProblem, deleteProblem, updateProblem, reorderProblems,
+      addProblem, deleteProblem, updateProblem, reorderProblems, moveProblemToWeek,
       getTestCases, updateTestCase, deleteTestCase, getLanguageConfigs, getChecker,
       addEvent, updateEvent, deleteEvent,
       addEventProblem, deleteEventProblem,
