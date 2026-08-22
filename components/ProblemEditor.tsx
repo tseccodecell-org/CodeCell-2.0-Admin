@@ -4,6 +4,11 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ParseProblemPanel from '@/components/ParseProblemPanel'
+import type { ParsedProblem } from '@/lib/parse'
+
+// the api speaks EASY/MEDIUM/HARD, the form shows them title cased
+const DIFF_FROM_API: Record<string, string> = { EASY: 'Easy', MEDIUM: 'Medium', HARD: 'Hard' }
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -337,6 +342,33 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
 
   const [tab, setTab] = useState<Tab>('Details')
   const [problem, setProblem] = useState<ProblemFormData>(emptyProblem)
+
+  // the parse only fills the form. saving stays a deliberate act, and anything
+  // the model left blank keeps whatever was already typed
+  function applyParsed(parsed: ParsedProblem) {
+    setProblem(prev => ({
+      ...prev,
+      name: parsed.title || prev.name,
+      difficulty: DIFF_FROM_API[parsed.difficulty] || prev.difficulty,
+      problemStatement: parsed.description || prev.problemStatement,
+      inputFormat: parsed.inputFormat || prev.inputFormat,
+      outputFormat: parsed.outputFormat || prev.outputFormat,
+      constraints: parsed.constraints || prev.constraints,
+      testCases: parsed.samples.length
+        ? [
+            ...prev.testCases,
+            ...parsed.samples.map((sample, i) => ({
+              id: `parsed-${Date.now()}-${i}`,
+              input: sample.input,
+              output: sample.output,
+              explanation: sample.explanation,
+              isSample: true,
+            })),
+          ]
+        : prev.testCases,
+    }))
+    setDirty(true)
+  }
   const [prefilled, setPrefilled] = useState(false)
   const [savedId, setSavedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -580,6 +612,10 @@ export default function ProblemEditor({ type, mode }: ProblemEditorProps) {
         ) : (
           <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Saved</span>
         )}
+      </div>
+
+      <div className="px-4 sm:px-8 py-3 border-b border-slate-200">
+        <ParseProblemPanel weekId={type === 'week' ? String(parentId) : undefined} onParsed={applyParsed} />
       </div>
 
       <div className="flex items-center border-b border-slate-200 px-4 sm:px-8 bg-white shrink-0 overflow-x-auto">
