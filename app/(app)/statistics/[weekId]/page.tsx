@@ -99,6 +99,7 @@ export default function StatsDetail() {
   const [error, setError] = useState<string | null>(null)
 
   const [rows, setRows] = useState<AdminSubmissionRow[]>([])
+  const [subTotal, setSubTotal] = useState(0)
   const [subError, setSubError] = useState<string | null>(null)
   const [verdictFilter, setVerdictFilter] = useState('all')
   const [page, setPage] = useState(1)
@@ -123,14 +124,28 @@ export default function StatsDetail() {
     }
   }, [weekId])
 
+  // the verdict chips count across the whole contest, so every page has to be
+  // pulled. a flat limit quietly cut the list off and undercounted them
   const loadSubmissions = useCallback(async () => {
     if (!weekId) return
+    const PAGE = 500
+    const MAX_PAGES = 40
     try {
-      const result = await listSubmissions({ weekId, limit: 200 })
-      setRows(result.submissions ?? [])
+      const all: AdminSubmissionRow[] = []
+      let total = 0
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const result = await listSubmissions({ weekId, limit: PAGE, offset: page * PAGE })
+        const batch = result.submissions ?? []
+        all.push(...batch)
+        total = result.total ?? all.length
+        if (batch.length < PAGE || all.length >= total) break
+      }
+      setRows(all)
+      setSubTotal(total)
       setSubError(null)
     } catch (e) {
       setRows([])
+      setSubTotal(0)
       setSubError(e instanceof Error ? e.message : 'Could not load submissions.')
     }
   }, [weekId])
@@ -290,7 +305,7 @@ export default function StatsDetail() {
                 <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{data?.problemBreakdown.length}</span>
               )}
               {tab === 'Submissions' && rows.length > 0 && (
-                <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{rows.length}</span>
+                <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">{subTotal || rows.length}</span>
               )}
             </button>
           ))}
@@ -473,7 +488,7 @@ export default function StatsDetail() {
                           : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
-                      All {rows.length}
+                      All {subTotal || rows.length}
                     </button>
                     {VERDICT_ORDER.filter(v => (verdictCounts[v] ?? 0) > 0).map(v => (
                       <button

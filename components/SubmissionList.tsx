@@ -53,7 +53,8 @@ export default function SubmissionList({ rows, openId, details, pending, onToggl
                 className="flex-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-left min-w-0"
               >
                 <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-                  <p className="text-sm font-semibold text-slate-800 truncate">{row.problemName}</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate">{row.username}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 truncate">{row.problemName}</p>
                   <p className="text-xs text-slate-400 mt-0.5 truncate">
                     {row.weekTitle ? `${row.weekTitle} - ` : ''}{new Date(row.submittedAt).toLocaleString()}
                   </p>
