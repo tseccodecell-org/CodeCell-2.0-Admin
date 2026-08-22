@@ -126,6 +126,7 @@ export interface DataContextValue {
   addProblem: (weekId: string, problem: ProblemFormData) => Promise<string>
   deleteProblem: (weekId: string, problemId: string | number) => Promise<void>
   updateProblem: (problemId: string, problem: ProblemFormData) => Promise<void>
+  reorderProblems: (weekId: string, problemIds: (string | number)[]) => Promise<void>
 
   getTestCases: (problemId: string) => Promise<TestCase[]>
   updateTestCase: (problemId: string, testcaseId: string | number, tc: Partial<TestCase>) => Promise<void>

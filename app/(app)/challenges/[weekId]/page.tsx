@@ -1,8 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  DndContext, KeyboardSensor, PointerSensor, closestCenter,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core'
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
+import {
+  SortableContext, arrayMove, sortableKeyboardCoordinates,
+  useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useData } from '@/context/DataContext'
 import Countdown from '@/components/Countdown'
 import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
@@ -16,6 +26,39 @@ const DIFF_COLORS: Record<string, string> = {
 
 
 const TABS = ['Details', 'Challenges', 'Notifications']
+
+function GripIcon() {
+  return (
+    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+      <circle cx="7" cy="5" r="1.5" /><circle cx="13" cy="5" r="1.5" />
+      <circle cx="7" cy="10" r="1.5" /><circle cx="13" cy="10" r="1.5" />
+      <circle cx="7" cy="15" r="1.5" /><circle cx="13" cy="15" r="1.5" />
+    </svg>
+  )
+}
+
+// the handle props are handed back so only the grip starts a drag, otherwise
+// every button in the row would fight the sensor
+function SortableProblemRow({
+  id, children,
+}: {
+  id: string
+  children: (handleProps: Record<string, unknown>) => ReactNode
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={isDragging
+        ? 'relative z-10 bg-white shadow-lg ring-1 ring-slate-300'
+        : 'hover:bg-slate-50/60 transition-colors'}
+    >
+      {children({ ...attributes, ...listeners })}
+    </tr>
+  )
+}
 
 const fieldCls = 'px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white'
 
@@ -132,7 +175,13 @@ type DetailsForm = {
 export default function WeekDetail() {
   const { weekId } = useParams<{ weekId: string }>()
   const router = useRouter()
-  const { weeks, deleteProblem, updateWeek, deleteWeek, refreshWeeks } = useData()
+  const { weeks, deleteProblem, updateWeek, deleteWeek, refreshWeeks, reorderProblems } = useData()
+
+  // a small distance stops a plain click on a row button registering as a drag
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
   const week = weeks.find(w => w.id === weekId) // ids are uuid strings now
 
   const [activeTab, setActiveTab] = useState('Details')
@@ -259,6 +308,22 @@ export default function WeekDetail() {
       consequences: ['Existing submissions for it are kept but stop counting'],
       onConfirm: () => deleteProblem(week!.id, problemId),
     })
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id || !week) return
+
+    const ids = week.problems.map(p => String(p.id))
+    const from = ids.indexOf(String(active.id))
+    const to = ids.indexOf(String(over.id))
+    if (from === -1 || to === -1) return
+
+    try {
+      await reorderProblems(week.id, arrayMove(ids, from, to))
+    } catch {
+      // the context puts the old order back and has already surfaced the error
+    }
   }
 
   return (
@@ -488,9 +553,16 @@ export default function WeekDetail() {
             ) : (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  modifiers={[restrictToVerticalAxis]}
+                  onDragEnd={handleDragEnd}
+                >
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200">
+                      <th className="w-10" />
                       <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest w-16 whitespace-nowrap">No.</th>
                       <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Name</th>
                       <th className="px-6 py-3.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Difficulty</th>
@@ -507,8 +579,22 @@ export default function WeekDetail() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
+                    <SortableContext
+                      items={week.problems.map(p => String(p.id))}
+                      strategy={verticalListSortingStrategy}
+                    >
                     {week.problems.map((p, i) => (
-                      <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                      <SortableProblemRow key={p.id} id={String(p.id)}>
+                        {handleProps => (<>
+                        <td className="pl-3 pr-0 py-4">
+                          <button
+                            {...handleProps}
+                            title="Drag to reorder"
+                            className="p-1 rounded-md text-slate-300 hover:text-slate-600 hover:bg-slate-100 cursor-grab active:cursor-grabbing touch-none"
+                          >
+                            <GripIcon />
+                          </button>
+                        </td>
                         <td className="px-6 py-4 text-sm text-slate-500">{i + 1}.</td>
                         <td className="px-6 py-4">
                           <button
@@ -564,10 +650,13 @@ export default function WeekDetail() {
                             </button>
                           </div>
                         </td>
-                      </tr>
+                        </>)}
+                      </SortableProblemRow>
                     ))}
+                    </SortableContext>
                   </tbody>
                 </table>
+                </DndContext>
                 </div>
               </div>
             )}

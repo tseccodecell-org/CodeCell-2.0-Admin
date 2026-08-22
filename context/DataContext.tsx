@@ -275,6 +275,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
     refreshWeeks()
   }
 
+  // the new order is shown straight away and rolled back if the save fails,
+  // otherwise the row would snap back under the cursor on every drag
+  const reorderProblems = async (weekId: string, problemIds: (string | number)[]) => {
+    const previous = weeks
+    setWeeks(ws => ws.map(w => {
+      if (w.id !== weekId) return w
+      const byId = new Map(w.problems.map(p => [String(p.id), p]))
+      const reordered = problemIds
+        .map(id => byId.get(String(id)))
+        .filter((p): p is Problem => Boolean(p))
+      return { ...w, problems: reordered }
+    }))
+
+    try {
+      await api('PUT', `/api/admin/weeks/${weekId}/problems/order`, {
+        problemIds: problemIds.map(String),
+      })
+    } catch (e) {
+      setWeeks(previous)
+      throw e
+    }
+  }
+
   // edit flow: PATCH the details, upsert language configs, add only the NEW
   // testcases (existing ones are managed live via deleteTestCase/addTestCase),
   // and sync the checker registration at the end
@@ -362,7 +385,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     <DataContext.Provider value={{
       weeks, events, refreshWeeks,
       addWeek, updateWeek, deleteWeek,
-      addProblem, deleteProblem, updateProblem,
+      addProblem, deleteProblem, updateProblem, reorderProblems,
       getTestCases, updateTestCase, deleteTestCase, getLanguageConfigs, getChecker,
       addEvent, updateEvent, deleteEvent,
       addEventProblem, deleteEventProblem,
