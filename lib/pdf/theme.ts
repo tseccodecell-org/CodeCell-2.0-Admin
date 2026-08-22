@@ -1,140 +1,125 @@
 import jsPDF from 'jspdf'
 
-export const INK = [15, 23, 42] as [number, number, number]
-export const MUTED = [100, 116, 139] as [number, number, number]
-export const FAINT = [148, 163, 184] as [number, number, number]
-export const RULE = [226, 232, 240] as [number, number, number]
-export const BAND = [248, 250, 252] as [number, number, number]
+// a plain paper look: serif face, black on white, rules only where a rule
+// carries meaning. no fills, no stripes, no colour.
+export const BLACK: [number, number, number] = [0, 0, 0]
+export const GREY: [number, number, number] = [90, 90, 90]
 
-export const GOOD = [16, 185, 129] as [number, number, number]
-export const WARN = [245, 158, 11] as [number, number, number]
-export const BAD = [244, 63, 94] as [number, number, number]
+export const SERIF = 'times'
 
-export const MARGIN = 48
+export const MARGIN = 64
 export const PAGE_W = 595.28
 export const PAGE_H = 841.89
 export const CONTENT_W = PAGE_W - MARGIN * 2
+export const BOTTOM = PAGE_H - 64
 
 export function newDoc() {
-  return new jsPDF({ unit: 'pt', format: 'a4', compress: true })
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true })
+  doc.setFont(SERIF, 'normal')
+  doc.setTextColor(0, 0, 0)
+  return doc
 }
 
-export function setColor(doc: jsPDF, rgb: [number, number, number]) {
-  doc.setTextColor(rgb[0], rgb[1], rgb[2])
+// centred title block, the way a paper opens
+export function titleBlock(doc: jsPDF, title: string, subtitle: string) {
+  const centre = PAGE_W / 2
+
+  doc.setFont(SERIF, 'bold')
+  doc.setFontSize(17)
+  doc.text(title, centre, MARGIN + 24, { align: 'center' })
+
+  doc.setFont(SERIF, 'normal')
+  doc.setFontSize(10.5)
+  doc.text(subtitle, centre, MARGIN + 44, { align: 'center' })
+
+  doc.setFontSize(9)
+  doc.setTextColor(GREY[0], GREY[1], GREY[2])
+  doc.text(new Date().toLocaleString(), centre, MARGIN + 60, { align: 'center' })
+  doc.setTextColor(0, 0, 0)
+
+  return MARGIN + 92
 }
 
-// every page gets the same footer, added at the end once the count is known
-export function paginate(doc: jsPDF, subtitle: string) {
-  const pages = doc.getNumberOfPages()
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i)
-    doc.setDrawColor(RULE[0], RULE[1], RULE[2])
-    doc.setLineWidth(0.5)
-    doc.line(MARGIN, PAGE_H - 38, PAGE_W - MARGIN, PAGE_H - 38)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    setColor(doc, FAINT)
-    doc.text(subtitle, MARGIN, PAGE_H - 24)
-    doc.text(`${i} of ${pages}`, PAGE_W - MARGIN, PAGE_H - 24, { align: 'right' })
-  }
-}
-
-export function coverHeading(doc: jsPDF, title: string, subtitle: string) {
-  doc.setFillColor(INK[0], INK[1], INK[2])
-  doc.rect(0, 0, PAGE_W, 132, 'F')
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
-  doc.setTextColor(255, 255, 255)
-  doc.text(title, MARGIN, 62)
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(203, 213, 225)
-  doc.text(subtitle, MARGIN, 84)
-
-  doc.setFontSize(8)
-  doc.setTextColor(148, 163, 184)
-  doc.text(`Generated ${new Date().toLocaleString()}`, MARGIN, 106)
-
-  return 164
-}
-
-export function sectionTitle(doc: jsPDF, text: string, y: number) {
-  doc.setFont('helvetica', 'bold')
+// numbered section headings, no rule under them
+export function section(doc: jsPDF, n: number, text: string, y: number) {
+  const cursor = ensureRoom(doc, y, 40)
+  doc.setFont(SERIF, 'bold')
   doc.setFontSize(12)
-  setColor(doc, INK)
-  doc.text(text, MARGIN, y)
-  doc.setDrawColor(RULE[0], RULE[1], RULE[2])
-  doc.setLineWidth(0.5)
-  doc.line(MARGIN, y + 7, PAGE_W - MARGIN, y + 7)
-  return y + 26
+  doc.text(`${n}  ${text}`, MARGIN, cursor)
+  return cursor + 18
 }
 
-// a row of boxed figures, the headline numbers of a report
-export function statRow(
-  doc: jsPDF,
-  stats: { label: string; value: string; tone?: [number, number, number] }[],
-  y: number
-) {
-  const gap = 10
-  const boxW = (CONTENT_W - gap * (stats.length - 1)) / stats.length
-  const boxH = 52
-
-  stats.forEach((s, i) => {
-    const x = MARGIN + i * (boxW + gap)
-    doc.setFillColor(BAND[0], BAND[1], BAND[2])
-    doc.setDrawColor(RULE[0], RULE[1], RULE[2])
-    doc.roundedRect(x, y, boxW, boxH, 4, 4, 'FD')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(15)
-    setColor(doc, s.tone ?? INK)
-    doc.text(s.value, x + 11, y + 25)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    setColor(doc, MUTED)
-    doc.text(s.label.toUpperCase(), x + 11, y + 40)
-  })
-
-  return y + boxH + 22
+export function subsection(doc: jsPDF, text: string, y: number) {
+  const cursor = ensureRoom(doc, y, 34)
+  doc.setFont(SERIF, 'bold')
+  doc.setFontSize(10.5)
+  doc.text(text, MARGIN, cursor)
+  return cursor + 15
 }
 
-// breaks a page when the next block would not fit
 export function ensureRoom(doc: jsPDF, y: number, needed: number) {
-  if (y + needed > PAGE_H - 60) {
+  if (y + needed > BOTTOM) {
     doc.addPage()
-    return MARGIN + 12
+    return MARGIN
   }
   return y
 }
 
-export function paragraph(doc: jsPDF, text: string, y: number, size = 9) {
-  doc.setFont('helvetica', 'normal')
+export function paragraph(doc: jsPDF, text: string, y: number, size = 10) {
+  doc.setFont(SERIF, 'normal')
   doc.setFontSize(size)
-  setColor(doc, INK)
-  const lines = doc.splitTextToSize(text, CONTENT_W) as string[]
+  const lines = doc.splitTextToSize(String(text ?? '').trim(), CONTENT_W) as string[]
+  const lead = size + 3.5
 
   let cursor = y
   for (const line of lines) {
-    cursor = ensureRoom(doc, cursor, 14)
+    cursor = ensureRoom(doc, cursor, lead)
     doc.text(line, MARGIN, cursor)
-    cursor += size + 4
+    cursor += lead
   }
   return cursor
+}
+
+// key: value pairs down the page, aligned on a fixed gutter
+export function describe(doc: jsPDF, pairs: [string, string][], y: number) {
+  const labelW = 168
+  let cursor = y
+
+  for (const [label, value] of pairs) {
+    cursor = ensureRoom(doc, cursor, 16)
+    doc.setFont(SERIF, 'normal')
+    doc.setFontSize(10)
+    doc.text(label, MARGIN, cursor)
+    doc.setFont(SERIF, 'bold')
+    doc.text(value, MARGIN + labelW, cursor)
+    cursor += 15
+  }
+  return cursor + 6
 }
 
 export function percent(value: number) {
   return `${Math.round((value ?? 0) * 100)}%`
 }
 
-// registration leaves username blank for some accounts, so fall back to the
-// part of their email before the @ rather than printing nothing
+// registration leaves username blank on some accounts, so fall back to the part
+// of the email before the @ rather than printing an empty cell
 export function displayName(user: { username?: string; email?: string; name?: string }) {
   const username = (user.username || '').trim()
   if (username) return username
   const email = (user.email || '').trim()
   if (email.includes('@')) return email.split('@')[0]
   return (user.name || '').trim() || 'unknown'
+}
+
+export function footers(doc: jsPDF, note: string) {
+  const pages = doc.getNumberOfPages()
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i)
+    doc.setFont(SERIF, 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(GREY[0], GREY[1], GREY[2])
+    doc.text(note, MARGIN, PAGE_H - 40)
+    doc.text(String(i), PAGE_W - MARGIN, PAGE_H - 40, { align: 'right' })
+    doc.setTextColor(0, 0, 0)
+  }
 }
