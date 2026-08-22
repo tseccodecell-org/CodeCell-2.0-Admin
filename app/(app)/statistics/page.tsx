@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useData } from '@/context/DataContext'
 import { getOverview, type AnalyticsOverview } from '@/lib/analytics'
+import { listAllUsers } from '@/lib/moderation'
+import DownloadPdfButton from '@/components/DownloadPdfButton'
+import { buildOverallReport, buildLeaderboardReport, save } from '@/lib/pdf/reports'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
@@ -90,6 +93,22 @@ export default function StatsList() {
       <div className="h-auto sm:h-16 bg-white border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3 px-4 sm:px-8 py-3 sm:py-0 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-base font-bold text-slate-900">Analytics</h1>
+          <DownloadPdfButton
+            label="Overall stats"
+            variant="ghost"
+            onDownload={async () => {
+              if (!data) throw new Error("Analytics are still loading.")
+              save(buildOverallReport(data), "contest-overall-stats.pdf")
+            }}
+          />
+          <DownloadPdfButton
+            label="Leaderboard"
+            variant="ghost"
+            onDownload={async () => {
+              const all = await listAllUsers()
+              save(buildLeaderboardReport(all, "Season standings"), "leaderboard.pdf")
+            }}
+          />
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           {kpis.map(k => (

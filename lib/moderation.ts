@@ -13,6 +13,7 @@ export interface AdminUserRow {
   bannedAt?: string
   collegeName?: string
   warningCount?: number
+  problemsSolved?: number
 }
 
 export interface AdminSubmissionRow {
@@ -119,4 +120,21 @@ export function invalidateSubmission(submissionId: string, reason: string) {
 
 export function restoreSubmission(submissionId: string) {
   return call<unknown>('POST', `/api/admin/submissions/${submissionId}/restore`)
+}
+
+// pages through every participant. a flat limit would quietly cut the
+// leaderboard off at whatever the first page happened to hold
+export async function listAllUsers(): Promise<AdminUserRow[]> {
+  const PAGE = 500
+  const MAX_PAGES = 40
+  const all: AdminUserRow[] = []
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await listUsers('', PAGE, page * PAGE)
+    const batch = result.users ?? []
+    all.push(...batch)
+    const total = result.total ?? all.length
+    if (batch.length < PAGE || all.length >= total) break
+  }
+  return all
 }
