@@ -14,6 +14,8 @@ export interface AdminUserRow {
   collegeName?: string
   warningCount?: number
   problemsSolved?: number
+  totalSubmissions?: number
+  weeksParticipated?: number
 }
 
 export interface AdminSubmissionRow {
@@ -125,7 +127,8 @@ export function restoreSubmission(submissionId: string) {
 // pages through every participant. a flat limit would quietly cut the
 // leaderboard off at whatever the first page happened to hold
 export async function listAllUsers(): Promise<AdminUserRow[]> {
-  const PAGE = 500
+  // the api caps limit at 200 and silently falls back to 50 above that
+  const PAGE = 200
   const MAX_PAGES = 40
   const all: AdminUserRow[] = []
 
