@@ -14,6 +14,8 @@ import {
   type AdminSubmissionRow,
 } from '@/lib/moderation'
 import SubmissionList from '@/components/SubmissionList'
+import DownloadPdfButton from '@/components/DownloadPdfButton'
+import { buildWeekReport, save, slug } from '@/lib/pdf/reports'
 import ProblemDiagnostics from '@/components/ProblemDiagnostics'
 import Pagination, { PAGE_SIZE } from '@/components/Pagination'
 import ReasonModal from '@/components/ReasonModal'
@@ -280,6 +282,23 @@ export default function StatsDetail() {
                   {week.active ? 'Live' : 'Ended'}
                 </span>
               )}
+            </div>
+            <div className="mt-3 flex flex-wrap items-start gap-2">
+              <DownloadPdfButton
+                label="Full report"
+                onDownload={async () => {
+                  if (!data) throw new Error("Analytics are still loading.")
+                  save(buildWeekReport(data, week?.problems ?? [], true), `${slug(title)}-full-report.pdf`)
+                }}
+              />
+              <DownloadPdfButton
+                label="Stats only"
+                variant="ghost"
+                onDownload={async () => {
+                  if (!data) throw new Error("Analytics are still loading.")
+                  save(buildWeekReport(data, [], false), `${slug(title)}-stats.pdf`)
+                }}
+              />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2.5 sm:flex sm:flex-wrap sm:items-center">
