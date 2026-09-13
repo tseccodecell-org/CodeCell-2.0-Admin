@@ -28,9 +28,11 @@ export async function exchangeAdminCode(code: string): Promise<void> {
 
 export class AuthError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  data?: unknown
+  constructor(status: number, message: string, data?: unknown) {
     super(message)
     this.status = status
+    this.data = data
     this.name = 'AuthError'
   }
 }
