@@ -28,7 +28,7 @@ describe('MaintenancePage', () => {
     expect(syncInvalidatedSubmissions).not.toHaveBeenCalled()
   })
 
-  it('renders the repair summary returned by the backend', async () => {
+  it('renders all five repair metrics returned by the backend', async () => {
     vi.mocked(syncInvalidatedSubmissions).mockResolvedValue({
       pendingBefore: 4,
       processed: 4,
@@ -42,8 +42,11 @@ describe('MaintenancePage', () => {
     await user.click(screen.getByRole('button', { name: 'Sync invalidated scores' }))
     await user.click(screen.getByRole('button', { name: 'Run sync' }))
 
-    expect(await screen.findByText('4 processed')).toBeInTheDocument()
+    expect(await screen.findByText('4 pending before')).toBeInTheDocument()
+    expect(screen.getByText('4 processed')).toBeInTheDocument()
+    expect(screen.getByText('0 failed')).toBeInTheDocument()
     expect(screen.getByText('0 still pending')).toBeInTheDocument()
+    expect(screen.getByText('3 affected users')).toBeInTheDocument()
   })
 
   it('keeps a partial repair summary visible when the sync reports an error', async () => {
@@ -62,5 +65,53 @@ describe('MaintenancePage', () => {
 
     expect(await screen.findByText('3 processed')).toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('Some repairs could not be completed.')
+    expect(screen.getAllByText('Some repairs could not be completed.')).toHaveLength(2)
+  })
+
+  it('clears an earlier repair summary when a retry has no result data', async () => {
+    vi.mocked(syncInvalidatedSubmissions)
+      .mockResolvedValueOnce({
+        pendingBefore: 4,
+        processed: 4,
+        failed: 0,
+        pendingAfter: 0,
+        affectedUsers: 3,
+      })
+      .mockRejectedValueOnce(new Error('Network unavailable.'))
+    const user = userEvent.setup()
+    render(createElement(MaintenancePage))
+
+    await user.click(screen.getByRole('button', { name: 'Sync invalidated scores' }))
+    await user.click(screen.getByRole('button', { name: 'Run sync' }))
+    expect(await screen.findByText('4 processed')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sync invalidated scores' }))
+    await user.click(screen.getByRole('button', { name: 'Run sync' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network unavailable.')
+    expect(screen.queryByText('4 processed')).not.toBeInTheDocument()
+  })
+
+  it('disables the sync trigger while a confirmed run is in progress', async () => {
+    let resolveSync!: (result: {
+      pendingBefore: number
+      processed: number
+      failed: number
+      pendingAfter: number
+      affectedUsers: number
+    }) => void
+    vi.mocked(syncInvalidatedSubmissions).mockReturnValue(new Promise(resolve => {
+      resolveSync = resolve
+    }))
+    const user = userEvent.setup()
+    render(createElement(MaintenancePage))
+
+    await user.click(screen.getByRole('button', { name: 'Sync invalidated scores' }))
+    await user.click(screen.getByRole('button', { name: 'Run sync' }))
+
+    expect(screen.getByRole('button', { name: 'Synchronizing...' })).toBeDisabled()
+
+    resolveSync({ pendingBefore: 1, processed: 1, failed: 0, pendingAfter: 0, affectedUsers: 1 })
+    expect(await screen.findByText('1 processed')).toBeInTheDocument()
   })
 })

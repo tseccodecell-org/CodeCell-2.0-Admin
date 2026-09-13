@@ -26,6 +26,7 @@ export default function MaintenancePage() {
   async function runSync() {
     setBusy(true)
     setError(null)
+    setResult(null)
     try {
       const nextResult = await syncInvalidatedSubmissions()
       setResult(nextResult)
