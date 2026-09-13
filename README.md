@@ -19,6 +19,14 @@ API_BASE_URL=http://localhost:8000 npm run dev
 
 Restart the dev server after changing `next.config.ts`, it is only read at startup.
 
+## Maintenance
+
+The authenticated **Maintenance** page in the sidebar contains **Sync invalidated scores**. Use it after moderating invalidated submissions to repair their scores and the affected weekly and season leaderboard totals. It processes invalidated submissions that still have a non-zero score; when one is an accepted attempt, the backend may also invalidate the same user's other accepted attempts for that problem.
+
+Read **Still pending** (`pendingAfter`) as the number of invalidated submissions with non-zero scores remaining after the run. A value of `0` means no such repairs remain; a non-zero value, especially after an error, means resolve the backend issue and run it again. The result also shows the number pending before the run, processed, failed, and affected users.
+
+Deploy the backend version that exposes `POST /api/admin/moderation/sync-invalidated` before deploying or using this page. Deploying either application does not run the synchronization or press the button automatically; the action always requires an administrator to confirm it.
+
 ## Structure
 
 ```
