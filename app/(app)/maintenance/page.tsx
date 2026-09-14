@@ -12,8 +12,9 @@ import {
 function isInvalidatedSyncResult(value: unknown): value is InvalidatedSyncResult {
   if (!value || typeof value !== 'object') return false
   const result = value as Record<string, unknown>
-  return ['pendingBefore', 'processed', 'failed', 'pendingAfter', 'affectedUsers']
-    .every(key => typeof result[key] === 'number')
+  return ['processed', 'failed'].every(key => typeof result[key] === 'number') &&
+    ['pendingBefore', 'pendingAfter', 'affectedUsers']
+      .every(key => result[key] === null || typeof result[key] === 'number')
 }
 
 export default function MaintenancePage() {
@@ -58,11 +59,11 @@ export default function MaintenancePage() {
   }
 
   const metrics = result && [
-    { label: 'Pending before', value: `${result.pendingBefore} pending before` },
+    { label: 'Pending before', value: result.pendingBefore === null ? 'Unavailable' : `${result.pendingBefore} pending before` },
     { label: 'Processed', value: `${result.processed} processed` },
     { label: 'Failed', value: `${result.failed} failed` },
-    { label: 'Still pending', value: `${result.pendingAfter} still pending` },
-    { label: 'Affected users', value: `${result.affectedUsers} affected users` },
+    { label: 'Still pending', value: result.pendingAfter === null ? 'Unavailable' : `${result.pendingAfter} still pending` },
+    { label: 'Affected users', value: result.affectedUsers === null ? 'Unavailable' : `${result.affectedUsers} affected users` },
   ]
 
   return (

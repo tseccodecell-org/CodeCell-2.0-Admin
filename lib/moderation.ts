@@ -41,11 +41,11 @@ export interface AdminSubmissionDetail extends AdminSubmissionRow {
 }
 
 export interface InvalidatedSyncResult {
-  pendingBefore: number
+  pendingBefore: number | null
   processed: number
   failed: number
-  pendingAfter: number
-  affectedUsers: number
+  pendingAfter: number | null
+  affectedUsers: number | null
 }
 
 export interface AdminWarning {

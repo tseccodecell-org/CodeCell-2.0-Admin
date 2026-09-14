@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthError } from '@/lib/auth'
-import { syncInvalidatedSubmissions } from '@/lib/moderation'
+import { syncInvalidatedSubmissions, type InvalidatedSyncResult } from '@/lib/moderation'
 import MaintenancePage from './page'
 
 vi.mock('@/lib/moderation', () => ({
@@ -92,14 +92,26 @@ describe('MaintenancePage', () => {
     expect(screen.queryByText('4 processed')).not.toBeInTheDocument()
   })
 
+  it.each([
+    { pendingBefore: null, processed: 0, failed: 0, pendingAfter: null, affectedUsers: null },
+    { pendingBefore: 4, processed: 3, failed: 1, pendingAfter: null, affectedUsers: 2 },
+  ])('renders unknown counts as Unavailable while preserving known counts: %j', async (partial) => {
+    vi.mocked(syncInvalidatedSubmissions).mockRejectedValue(new AuthError(500, 'Query failed.', partial))
+    const user = userEvent.setup()
+    render(createElement(MaintenancePage))
+    await user.click(screen.getByRole('button', { name: 'Sync invalidated scores' }))
+    await user.click(screen.getByRole('button', { name: 'Run sync' }))
+
+    expect(await screen.findByText(`${partial.processed} processed`)).toBeInTheDocument()
+    expect(screen.getAllByText('Unavailable')).toHaveLength(partial.pendingBefore === null ? 3 : 1)
+    expect(screen.queryByText('0 still pending')).not.toBeInTheDocument()
+    expect(screen.queryByText('0 pending before')).not.toBeInTheDocument()
+    expect(screen.queryByText('0 affected users')).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('Query failed.')
+  })
+
   it('disables the sync trigger while a confirmed run is in progress', async () => {
-    let resolveSync!: (result: {
-      pendingBefore: number
-      processed: number
-      failed: number
-      pendingAfter: number
-      affectedUsers: number
-    }) => void
+    let resolveSync!: (result: InvalidatedSyncResult) => void
     vi.mocked(syncInvalidatedSubmissions).mockReturnValue(new Promise(resolve => {
       resolveSync = resolve
     }))
