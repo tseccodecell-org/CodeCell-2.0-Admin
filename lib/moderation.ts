@@ -40,6 +40,14 @@ export interface AdminSubmissionDetail extends AdminSubmissionRow {
   invalidatedAt?: string
 }
 
+export interface InvalidatedSyncResult {
+  pendingBefore: number | null
+  processed: number
+  failed: number
+  pendingAfter: number | null
+  affectedUsers: number | null
+}
+
 export interface AdminWarning {
   id: string
   userId?: number
@@ -122,6 +130,10 @@ export function invalidateSubmission(submissionId: string, reason: string) {
 
 export function restoreSubmission(submissionId: string) {
   return call<unknown>('POST', `/api/admin/submissions/${submissionId}/restore`)
+}
+
+export function syncInvalidatedSubmissions() {
+  return call<InvalidatedSyncResult>('POST', '/api/admin/moderation/sync-invalidated')
 }
 
 // pages through every participant. a flat limit would quietly cut the

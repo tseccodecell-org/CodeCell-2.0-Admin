@@ -19,6 +19,16 @@ API_BASE_URL=http://localhost:8000 npm run dev
 
 Restart the dev server after changing `next.config.ts`, it is only read at startup.
 
+## Maintenance
+
+The authenticated **Maintenance** page in the sidebar contains **Sync invalidated scores**. Use it after moderating invalidated submissions to repair their scores and the affected weekly and season leaderboard totals. It processes invalidated submissions that still have a non-zero score; when one is an accepted attempt, the backend may also invalidate the same user's other accepted attempts for that problem.
+
+Read **Still pending** (`pendingAfter`) as the number of invalidated submissions with non-zero scores remaining after the run. A value of `0` means no such repairs remain; a non-zero value, especially after an error, means resolve the backend issue and run it again. The result also shows the number pending before the run, processed, failed, and affected users.
+
+Counts the backend could not establish appear as **Unavailable**, not `0`. `pendingBefore` and `affectedUsers` are `null` when initial selection fails; `pendingAfter` is `null` when selection or the final count fails. Known processed and failed counts remain visible alongside the error. A failed cascade or leaderboard repair retains a non-zero score on its original invalidated candidate so another confirmed run can retry it. Successful repairs finish at zero; partial successful changes may remain.
+
+Deploy the backend version that exposes `POST /api/admin/moderation/sync-invalidated` before deploying or using this page. Configure its `ADMIN_FRONTEND_URL` to this admin application's URL: cookie requests must have that trusted origin and use JSON, which the API client sends automatically. This feature adds no new automatic run. The backend's pre-existing startup and daily synchronization remain active, including a startup run following a backend deployment or restart. The new button action requires an administrator to confirm it.
+
 ## Structure
 
 ```

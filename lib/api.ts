@@ -15,7 +15,7 @@ export async function call<T>(method: string, url: string, body?: unknown): Prom
       data.error?.message ||
       (typeof data.error === 'string' ? data.error : null) ||
       `Request failed (${res.status})`
-    throw new AuthError(res.status, message)
+    throw new AuthError(res.status, message, data.data)
   }
 
   return data.data as T

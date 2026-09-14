@@ -36,6 +36,15 @@ const navSections = [
           </svg>
         ),
       },
+      {
+        to: '/maintenance',
+        label: 'Maintenance',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M14.7 6.3a1 1 0 00-1.4 0l-7 7a1 1 0 000 1.4l2 2a1 1 0 001.4 0l7-7a1 1 0 000-1.4l-2-2zM5 19l-2 2m10-10l2 2m3.5-9.5l2 2" />
+          </svg>
+        ),
+      },
     ],
   },
   {

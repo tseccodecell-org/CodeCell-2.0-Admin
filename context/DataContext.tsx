@@ -151,7 +151,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     if (loadedRef.current) return
     loadedRef.current = true
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshWeeks()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])

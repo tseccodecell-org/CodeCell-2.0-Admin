@@ -17,6 +17,7 @@ const ACTION_STYLE: Record<string, string> = {
   REVOKE_WARNING: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200/60',
   INVALIDATE_SUBMISSION: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200/60',
   RESTORE_SUBMISSION: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
+  SYNC_INVALIDATED_SUBMISSIONS: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/60',
   DELETE_WEEK: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200/60',
   DELETE_PROBLEM: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200/60',
   DELETE_TEST_CASE: 'bg-rose-50 text-rose-700 ring-1 ring-rose-200/60',
