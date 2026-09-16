@@ -11,6 +11,7 @@ import {
   listFinales,
   pauseFinale,
   resumeFinale,
+  revokeAccess,
   startFinale,
 } from '@/lib/finales'
 import { listUsers, type AdminUserRow } from '@/lib/moderation'
@@ -18,13 +19,11 @@ import FinalesPage from './page'
 
 vi.mock('@/lib/finales', () => ({
   listFinales: vi.fn(),
-  getFinale: vi.fn(),
   createFinale: vi.fn(),
   startFinale: vi.fn(),
   pauseFinale: vi.fn(),
   resumeFinale: vi.fn(),
   endFinale: vi.fn(),
-  updateFinaleAccessMode: vi.fn(),
   listAccessGrants: vi.fn(),
   grantAccess: vi.fn(),
   revokeAccess: vi.fn(),
@@ -60,6 +59,7 @@ describe('FinalesPage', () => {
     vi.mocked(listAccessGrants).mockReset().mockResolvedValue([])
     vi.mocked(listUsers).mockReset().mockResolvedValue({ users: [], total: 0 })
     vi.mocked(grantAccess).mockReset()
+    vi.mocked(revokeAccess).mockReset()
   })
 
   afterEach(cleanup)
@@ -128,7 +128,7 @@ describe('FinalesPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('That participant is already banned.')
   })
 
-  it('renders grant and revoke controls only for restricted finales', async () => {
+  it('renders the grant access control for restricted finales', async () => {
     const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
     vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
 
@@ -138,6 +138,84 @@ describe('FinalesPage', () => {
 
     expect(screen.getByRole('button', { name: 'Grant access' })).toBeVisible()
     await waitFor(() => expect(listAccessGrants).toHaveBeenCalledWith(restrictedFinale.weekId))
+  })
+
+  it('renders a revoke control for each existing grant, using cached names when available', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    vi.mocked(listAccessGrants).mockResolvedValue([
+      { userId: 7, grantedAt: '2026-09-16T12:00:00Z' },
+      { userId: 8, grantedAt: '2026-09-16T12:05:00Z' },
+    ])
+
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    expect(await screen.findByText('User #7')).toBeInTheDocument()
+    expect(screen.getByText('User #8')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Revoke' })).toHaveLength(2)
+  })
+
+  it('calls revokeAccess with the weekId and userId and refetches grants on click', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    vi.mocked(listAccessGrants)
+      .mockResolvedValueOnce([{ userId: 7, grantedAt: '2026-09-16T12:00:00Z' }])
+      .mockResolvedValueOnce([])
+    vi.mocked(revokeAccess).mockResolvedValue({ success: true })
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+    await screen.findByText('User #7')
+
+    await user.click(screen.getByRole('button', { name: 'Revoke' }))
+
+    expect(revokeAccess).toHaveBeenCalledWith(restrictedFinale.weekId, 7)
+    await waitFor(() => expect(listAccessGrants).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('User #7')).not.toBeInTheDocument()
+  })
+
+  it('resolves grant names from the grant-search cache instead of showing a bare id', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    vi.mocked(listAccessGrants).mockResolvedValue([{ userId: 7, grantedAt: '2026-09-16T12:00:00Z' }])
+    const user1: AdminUserRow = {
+      id: 7, name: 'Ada Lovelace', username: 'ada', email: 'ada@example.com',
+      isTsecUser: false, rating: 0, seasonXp: 0, isBanned: false,
+    }
+    vi.mocked(listUsers).mockResolvedValue({ users: [user1], total: 1 })
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+    await screen.findByText('User #7')
+
+    await user.click(screen.getByRole('button', { name: 'Grant access' }))
+    await user.type(screen.getByPlaceholderText(/search participants/i), 'ada')
+    await screen.findByText('@ada')
+
+    await waitFor(() => expect(screen.getAllByText('Ada Lovelace').length).toBeGreaterThanOrEqual(2))
+    expect(screen.queryByText('User #7')).not.toBeInTheDocument()
+  })
+
+  it('surfaces a visible error instead of silently emptying results when participant search fails', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    vi.mocked(listUsers).mockRejectedValue(new Error('Session expired.'))
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    await user.click(screen.getByRole('button', { name: 'Grant access' }))
+    await user.type(screen.getByPlaceholderText(/search participants/i), 'ada')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Session expired.')
   })
 
   it('does not render grant access controls for an open finale', async () => {

@@ -70,8 +70,10 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
   const [searching, setSearching] = useState(false)
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<AdminUserRow[]>([])
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [pendingUserId, setPendingUserId] = useState<number | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [userNameCache, setUserNameCache] = useState<Record<number, string>>({})
 
   const loadGrants = useCallback(async () => {
     setLoadingGrants(true)
@@ -91,11 +93,19 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
   useEffect(() => {
     if (!searching) return
     const timer = setTimeout(async () => {
+      setSearchError(null)
       try {
         const data = await listUsers(search)
-        setResults(data.users ?? [])
-      } catch {
+        const users = data.users ?? []
+        setResults(users)
+        setUserNameCache(prev => {
+          const next = { ...prev }
+          for (const u of users) next[u.id] = u.name || u.username
+          return next
+        })
+      } catch (e) {
         setResults([])
+        setSearchError(e instanceof Error ? e.message : 'Could not search participants.')
       }
     }, 300)
     return () => clearTimeout(timer)
@@ -134,7 +144,10 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Access Grants</h4>
         <button
-          onClick={() => setSearching(s => !s)}
+          onClick={() => {
+            setSearching(s => !s)
+            setSearchError(null)
+          }}
           className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50"
         >
           Grant access
@@ -152,6 +165,7 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
             className={inputCls}
             autoFocus
           />
+          {searchError && <p role="alert" className="text-xs text-rose-600 mt-2">{searchError}</p>}
           {results.length > 0 && (
             <ul className="mt-2 flex flex-col gap-1 max-h-48 overflow-y-auto">
               {results.map(user => (
@@ -184,7 +198,7 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
         <ul className="flex flex-col gap-1.5">
           {grants.map(g => (
             <li key={g.userId} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50">
-              <span className="text-sm text-slate-700">User #{g.userId}</span>
+              <span className="text-sm text-slate-700">{userNameCache[g.userId] ?? `User #${g.userId}`}</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400">{new Date(g.grantedAt).toLocaleDateString()}</span>
                 <button

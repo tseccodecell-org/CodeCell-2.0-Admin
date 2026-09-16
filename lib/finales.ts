@@ -40,10 +40,6 @@ export function listFinales() {
   return call<AdminFinaleResponse[]>('GET', '/api/admin/finales')
 }
 
-export function getFinale(weekId: string) {
-  return call<AdminFinaleResponse>('GET', `/api/admin/finales/${weekId}`)
-}
-
 export function createFinale(data: CreateFinaleRequest) {
   return call<AdminFinaleResponse>('POST', '/api/admin/finales', data)
 }
@@ -62,10 +58,6 @@ export function resumeFinale(weekId: string) {
 
 export function endFinale(weekId: string) {
   return call<FinaleStatusResponse>('POST', `/api/admin/finales/${weekId}/end`)
-}
-
-export function updateFinaleAccessMode(weekId: string, accessMode: FinaleAccessMode) {
-  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/access-mode`, { accessMode })
 }
 
 export function listAccessGrants(weekId: string) {
