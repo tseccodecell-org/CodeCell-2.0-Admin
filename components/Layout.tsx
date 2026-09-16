@@ -45,6 +45,15 @@ const navSections = [
           </svg>
         ),
       },
+      {
+        to: '/finales',
+        label: 'Finales',
+        icon: (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 21h8m-4-4v4M6 3h12v3a6 6 0 01-12 0V3zM6 6H4a2 2 0 002 2m12-2h2a2 2 0 01-2 2" />
+          </svg>
+        ),
+      },
     ],
   },
   {

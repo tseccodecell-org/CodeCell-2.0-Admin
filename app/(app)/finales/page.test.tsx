@@ -1,0 +1,189 @@
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { createElement } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AdminFinaleResponse, FinaleStatusResponse } from '@/lib/finales'
+import {
+  createFinale,
+  endFinale,
+  listAccessGrants,
+  listFinales,
+  pauseFinale,
+  resumeFinale,
+  startFinale,
+} from '@/lib/finales'
+import { listUsers } from '@/lib/moderation'
+import FinalesPage from './page'
+
+vi.mock('@/lib/finales', () => ({
+  listFinales: vi.fn(),
+  getFinale: vi.fn(),
+  createFinale: vi.fn(),
+  startFinale: vi.fn(),
+  pauseFinale: vi.fn(),
+  resumeFinale: vi.fn(),
+  endFinale: vi.fn(),
+  updateFinaleAccessMode: vi.fn(),
+  listAccessGrants: vi.fn(),
+  grantAccess: vi.fn(),
+  revokeAccess: vi.fn(),
+}))
+
+vi.mock('@/lib/moderation', () => ({
+  listUsers: vi.fn(),
+}))
+
+function makeFinale(overrides: Partial<AdminFinaleResponse> = {}): AdminFinaleResponse {
+  return {
+    weekId: 'week-1',
+    title: 'Grand Finale',
+    description: 'The last stand.',
+    weekNumber: 8,
+    accessMode: 'OPEN',
+    state: 'DRAFT',
+    remainingSeconds: 3600,
+    liveSince: null,
+    createdAt: '2026-09-16T12:00:00Z',
+    ...overrides,
+  }
+}
+
+describe('FinalesPage', () => {
+  beforeEach(() => {
+    vi.mocked(listFinales).mockReset()
+    vi.mocked(createFinale).mockReset()
+    vi.mocked(startFinale).mockReset()
+    vi.mocked(pauseFinale).mockReset()
+    vi.mocked(resumeFinale).mockReset()
+    vi.mocked(endFinale).mockReset()
+    vi.mocked(listAccessGrants).mockReset().mockResolvedValue([])
+    vi.mocked(listUsers).mockReset().mockResolvedValue({ users: [], total: 0 })
+  })
+
+  afterEach(cleanup)
+
+  it('shows Pause while a finale is live and sends a confirmed pause', async () => {
+    const liveFinale = makeFinale({ weekId: 'week-live', state: 'LIVE', liveSince: '2026-09-16T12:00:00Z' })
+    vi.mocked(listFinales).mockResolvedValue([liveFinale])
+    const updatedStatus: FinaleStatusResponse = {
+      weekId: liveFinale.weekId,
+      state: 'PAUSED',
+      accessMode: liveFinale.accessMode,
+      remainingSeconds: 3200,
+      scoringActive: false,
+    }
+    vi.mocked(pauseFinale).mockResolvedValue(updatedStatus)
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    await user.click(screen.getByRole('button', { name: 'Pause' }))
+    await user.click(screen.getByRole('button', { name: 'Pause scoring' }))
+
+    expect(pauseFinale).toHaveBeenCalledWith(liveFinale.weekId)
+    expect(await screen.findByRole('button', { name: 'Resume' })).toBeInTheDocument()
+  })
+
+  it('renders grant and revoke controls only for restricted finales', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    expect(screen.getByRole('button', { name: 'Grant access' })).toBeVisible()
+    await waitFor(() => expect(listAccessGrants).toHaveBeenCalledWith(restrictedFinale.weekId))
+  })
+
+  it('does not render grant access controls for an open finale', async () => {
+    const openFinale = makeFinale({ weekId: 'week-open', accessMode: 'OPEN' })
+    vi.mocked(listFinales).mockResolvedValue([openFinale])
+
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    expect(screen.queryByRole('button', { name: 'Grant access' })).not.toBeInTheDocument()
+    expect(listAccessGrants).not.toHaveBeenCalled()
+  })
+
+  it('renders Start for a draft finale and calls startFinale directly, no confirmation needed', async () => {
+    const draftFinale = makeFinale({ weekId: 'week-draft', state: 'DRAFT' })
+    vi.mocked(listFinales).mockResolvedValue([draftFinale])
+    vi.mocked(startFinale).mockResolvedValue({
+      weekId: draftFinale.weekId,
+      state: 'LIVE',
+      accessMode: draftFinale.accessMode,
+      remainingSeconds: draftFinale.remainingSeconds,
+      scoringActive: true,
+      liveSince: '2026-09-16T13:00:00Z',
+    })
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+    await user.click(screen.getByRole('button', { name: 'Start' }))
+
+    expect(startFinale).toHaveBeenCalledWith(draftFinale.weekId)
+    expect(await screen.findByRole('button', { name: 'Pause' })).toBeInTheDocument()
+  })
+
+  it('requires typing the title before End permanently is enabled, then calls endFinale', async () => {
+    const liveFinale = makeFinale({ weekId: 'week-live', state: 'LIVE' })
+    vi.mocked(listFinales).mockResolvedValue([liveFinale])
+    vi.mocked(endFinale).mockResolvedValue({
+      weekId: liveFinale.weekId,
+      state: 'ENDED',
+      accessMode: liveFinale.accessMode,
+      remainingSeconds: 0,
+      scoringActive: false,
+    })
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+    await user.click(screen.getByRole('button', { name: 'End permanently' }))
+
+    const confirmButton = screen.getAllByRole('button', { name: 'End permanently' })[1]
+    expect(confirmButton).toBeDisabled()
+
+    await user.type(screen.getByRole('textbox'), liveFinale.title)
+    expect(confirmButton).toBeEnabled()
+
+    await user.click(confirmButton)
+    expect(endFinale).toHaveBeenCalledWith(liveFinale.weekId)
+  })
+
+  it('creates a finale converting minutes to seconds and shows the backend-assigned week number', async () => {
+    vi.mocked(listFinales).mockResolvedValue([])
+    const created = makeFinale({ weekId: 'week-new', title: 'Season Finale', weekNumber: 12 })
+    vi.mocked(createFinale).mockResolvedValue(created)
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await waitFor(() => expect(listFinales).toHaveBeenCalled())
+
+    await user.click(screen.getByRole('button', { name: 'New finale' }))
+    await user.type(screen.getByLabelText('Title'), 'Season Finale')
+    const durationInput = screen.getByLabelText(/duration/i)
+    await user.clear(durationInput)
+    await user.type(durationInput, '45')
+    await user.click(screen.getByRole('button', { name: 'Create finale' }))
+
+    await waitFor(() => expect(createFinale).toHaveBeenCalledWith({
+      title: 'Season Finale',
+      description: '',
+      durationSeconds: 2700,
+      accessMode: 'RESTRICTED',
+    }))
+
+    expect(await screen.findByText('Season Finale')).toBeInTheDocument()
+    expect(screen.getByText('Week 12')).toBeInTheDocument()
+  })
+})
