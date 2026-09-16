@@ -71,6 +71,7 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<AdminUserRow[]>([])
   const [pendingUserId, setPendingUserId] = useState<number | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const loadGrants = useCallback(async () => {
     setLoadingGrants(true)
@@ -104,9 +105,12 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
 
   async function handleGrant(userId: number) {
     setPendingUserId(userId)
+    setActionError(null)
     try {
       await grantAccess(finale.weekId, userId)
       await loadGrants()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not grant access.')
     } finally {
       setPendingUserId(null)
     }
@@ -114,9 +118,12 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
 
   async function handleRevoke(userId: number) {
     setPendingUserId(userId)
+    setActionError(null)
     try {
       await revokeAccess(finale.weekId, userId)
       await loadGrants()
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not revoke access.')
     } finally {
       setPendingUserId(null)
     }
@@ -133,6 +140,8 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
           Grant access
         </button>
       </div>
+
+      {actionError && <p role="alert" className="text-xs text-rose-600 mb-3">{actionError}</p>}
 
       {searching && (
         <div className="mb-3">
@@ -286,6 +295,7 @@ export default function FinalesPage() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -307,14 +317,19 @@ export default function FinalesPage() {
   }
 
   async function runTransition(finale: AdminFinaleResponse, action: 'start' | 'pause' | 'resume' | 'end') {
+    setActionError(null)
     const fn = { start: startFinale, pause: pauseFinale, resume: resumeFinale, end: endFinale }[action]
-    const status = await fn(finale.weekId)
-    patchFinale(finale.weekId, {
-      state: status.state,
-      accessMode: status.accessMode,
-      remainingSeconds: status.remainingSeconds,
-      liveSince: status.liveSince ?? null,
-    })
+    try {
+      const status = await fn(finale.weekId)
+      patchFinale(finale.weekId, {
+        state: status.state,
+        accessMode: status.accessMode,
+        remainingSeconds: status.remainingSeconds,
+        liveSince: status.liveSince ?? null,
+      })
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : `Could not ${action} "${finale.title}".`)
+    }
   }
 
   function handleStart(finale: AdminFinaleResponse) {
@@ -408,6 +423,17 @@ export default function FinalesPage() {
       <div className="flex-1 p-4 sm:p-8 flex flex-col gap-4">
         {loading && finales.length === 0 && <p className="text-sm text-slate-400">Loading finales...</p>}
         {error && <p className="text-sm text-rose-600">{error}</p>}
+        {actionError && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-rose-50 border border-rose-200 text-sm text-rose-700">
+            <span role="alert">{actionError}</span>
+            <button
+              onClick={() => setActionError(null)}
+              className="text-xs font-bold text-rose-600 hover:text-rose-800 shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {!loading && !error && finales.length === 0 && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center py-20 gap-3 text-slate-400">

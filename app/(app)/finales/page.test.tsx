@@ -6,13 +6,14 @@ import type { AdminFinaleResponse, FinaleStatusResponse } from '@/lib/finales'
 import {
   createFinale,
   endFinale,
+  grantAccess,
   listAccessGrants,
   listFinales,
   pauseFinale,
   resumeFinale,
   startFinale,
 } from '@/lib/finales'
-import { listUsers } from '@/lib/moderation'
+import { listUsers, type AdminUserRow } from '@/lib/moderation'
 import FinalesPage from './page'
 
 vi.mock('@/lib/finales', () => ({
@@ -58,6 +59,7 @@ describe('FinalesPage', () => {
     vi.mocked(endFinale).mockReset()
     vi.mocked(listAccessGrants).mockReset().mockResolvedValue([])
     vi.mocked(listUsers).mockReset().mockResolvedValue({ users: [], total: 0 })
+    vi.mocked(grantAccess).mockReset()
   })
 
   afterEach(cleanup)
@@ -84,6 +86,46 @@ describe('FinalesPage', () => {
 
     expect(pauseFinale).toHaveBeenCalledWith(liveFinale.weekId)
     expect(await screen.findByRole('button', { name: 'Resume' })).toBeInTheDocument()
+  })
+
+  it('surfaces a visible error instead of failing silently when a transition is rejected', async () => {
+    const liveFinale = makeFinale({ weekId: 'week-live', state: 'LIVE' })
+    vi.mocked(listFinales).mockResolvedValue([liveFinale])
+    vi.mocked(pauseFinale).mockRejectedValue(new Error('Another admin already paused this finale.'))
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    await user.click(screen.getByRole('button', { name: 'Pause' }))
+    await user.click(screen.getByRole('button', { name: 'Pause scoring' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Another admin already paused this finale.')
+    // the state did not actually change, so Pause is still the visible action
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+  })
+
+  it('surfaces a visible error instead of failing silently when granting access fails', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-restricted', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    const user1: AdminUserRow = {
+      id: 7, name: 'Ada Lovelace', username: 'ada', email: 'ada@example.com',
+      isTsecUser: false, rating: 0, seasonXp: 0, isBanned: false,
+    }
+    vi.mocked(listUsers).mockResolvedValue({ users: [user1], total: 1 })
+    vi.mocked(grantAccess).mockRejectedValue(new Error('That participant is already banned.'))
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await screen.findByText('Grand Finale')
+
+    await user.click(screen.getByRole('button', { name: 'Grant access' }))
+    await user.type(screen.getByPlaceholderText(/search participants/i), 'ada')
+    await user.click(await screen.findByRole('button', { name: 'Grant' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('That participant is already banned.')
   })
 
   it('renders grant and revoke controls only for restricted finales', async () => {
