@@ -8,6 +8,9 @@ import {
   createFinale,
   endFinale,
   grantAccess,
+  resetFinale,
+  listParticipantTemplates,
+  type ParticipantTemplates,
   setTemplatesLock,
   setFinaleSchedule,
   listAccessGrants,
@@ -227,6 +230,128 @@ function toLocalInput(iso?: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+function ScoringNote() {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-5">
+      <h2 className="text-sm font-bold text-slate-900">How a finale is scored</h2>
+      <p className="text-xs text-slate-500 mt-1.5 max-w-3xl">
+        A finale does not use the weekly scoring rule. Weekly challenges pay a difficulty
+        multiplier for a rare solve and a bonus for solving early; a finale pays neither.
+      </p>
+      <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div>
+          <dt className="text-xs font-bold text-slate-700">Points</dt>
+          <dd className="text-xs text-slate-500 mt-1">
+            Every solver of a problem gets exactly its base points. No multiplier, no speed bonus.
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold text-slate-700">Rank</dt>
+          <dd className="text-xs text-slate-500 mt-1">
+            Highest total points first. Only accepted submissions count.
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-bold text-slate-700">Ties</dt>
+          <dd className="text-xs text-slate-500 mt-1">
+            Broken by the time of the last accepted solve. Earlier wins.
+          </dd>
+        </div>
+      </dl>
+      <p className="text-xs text-slate-400 mt-4">
+        Set each problem&apos;s base points in the problem editor. Pausing stops submissions
+        scoring without stopping participants running or submitting code.
+      </p>
+    </div>
+  )
+}
+
+function ParticipantTemplatesPanel({ finale }: { finale: AdminFinaleResponse }) {
+  const [rows, setRows] = useState<ParticipantTemplates[] | null>(null)
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function load() {
+    setLoading(true)
+    setError(null)
+    try {
+      setRows(await listParticipantTemplates(finale.weekId))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load participant templates.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function toggle() {
+    const next = !open
+    setOpen(next)
+    if (next && rows === null) load()
+  }
+
+  const total = rows?.reduce((sum, r) => sum + r.templateCount, 0) ?? 0
+
+  return (
+    <div className="border-t border-slate-100 pt-4">
+      <button
+        onClick={toggle}
+        className="text-xs font-bold text-slate-700 hover:text-slate-900"
+      >
+        {open ? 'Hide' : 'Review'} participant templates
+        {rows && <span className="font-normal text-slate-500"> · {total} saved</span>}
+      </button>
+
+      {open && (
+        <div className="mt-3">
+          {loading && <p className="text-xs text-slate-500">Loading templates</p>}
+          {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}
+
+          {rows && rows.length === 0 && (
+            <p className="text-xs text-slate-500">
+              Nobody has been granted access yet, so there is nothing to review.
+            </p>
+          )}
+
+          {rows && rows.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {rows.map(row => (
+                <details key={row.userId} className="border border-slate-200 rounded-lg">
+                  <summary className="px-3 py-2 text-xs font-bold text-slate-700 cursor-pointer flex items-center justify-between">
+                    <span>User #{row.userId}</span>
+                    <span className="font-normal text-slate-500">
+                      {row.templateCount === 0
+                        ? 'no templates'
+                        : row.templateCount === 1
+                          ? '1 template'
+                          : `${row.templateCount} templates`}
+                    </span>
+                  </summary>
+                  {row.templates.length > 0 && (
+                    <div className="border-t border-slate-100 p-3 flex flex-col gap-3">
+                      {row.templates.map(t => (
+                        <div key={t.id}>
+                          <p className="text-xs font-bold text-slate-700">
+                            {t.name}
+                            <span className="ml-2 font-normal text-slate-500">{t.language}</span>
+                          </p>
+                          <pre className="mt-1.5 max-h-64 overflow-auto rounded bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap break-words">
+                            {t.sourceCode || '(empty)'}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </details>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TemplateWindowPanel({
   finale, onToggleLock, onSchedule,
 }: {
@@ -298,7 +423,7 @@ function TemplateWindowPanel({
 }
 
 function FinaleCard({
-  finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule,
+  finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule, onReset,
 }: {
   finale: AdminFinaleResponse
   onStart: (finale: AdminFinaleResponse) => void
@@ -307,6 +432,7 @@ function FinaleCard({
   onEnd: (finale: AdminFinaleResponse) => void
   onToggleLock: (finale: AdminFinaleResponse, locked: boolean) => void
   onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
+  onReset: (finale: AdminFinaleResponse) => void
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
@@ -339,6 +465,15 @@ function FinaleCard({
           >
             Manage problems
           </Link>
+          {finale.state !== 'DRAFT' && (
+            <button
+              onClick={() => onReset(finale)}
+              title="Put this finale back to DRAFT for a rehearsal"
+              className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            >
+              Reset to draft
+            </button>
+          )}
           {finale.state === 'DRAFT' && (
             <button
               onClick={() => onStart(finale)}
@@ -383,6 +518,8 @@ function FinaleCard({
       </div>
 
       <TemplateWindowPanel finale={finale} onToggleLock={onToggleLock} onSchedule={onSchedule} />
+
+      <ParticipantTemplatesPanel finale={finale} />
 
       {finale.accessMode === 'RESTRICTED' && <AccessGrantsPanel finale={finale} />}
     </div>
@@ -433,6 +570,28 @@ export default function FinalesPage() {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : `Could not ${action} "${finale.title}".`)
     }
+  }
+
+  function handleReset(finale: AdminFinaleResponse) {
+    setConfirmRequest({
+      title: 'Reset this finale',
+      body: `"${finale.title}" goes back to DRAFT with its full duration restored. Submissions already made are not deleted.`,
+      confirmLabel: 'Reset to draft',
+      tone: 'neutral',
+      onConfirm: async () => {
+        setActionError(null)
+        try {
+          const status = await resetFinale(finale.weekId)
+          patchFinale(finale.weekId, {
+            state: status.state,
+            remainingSeconds: status.remainingSeconds,
+            liveSince: status.liveSince ?? null,
+          })
+        } catch (e) {
+          setActionError(e instanceof Error ? e.message : `Could not reset "${finale.title}".`)
+        }
+      },
+    })
   }
 
   async function handleToggleLock(finale: AdminFinaleResponse, locked: boolean) {
@@ -578,6 +737,8 @@ export default function FinalesPage() {
           </div>
         )}
 
+        {finales.length > 0 && <ScoringNote />}
+
         {finales.map(finale => (
           <FinaleCard
             key={finale.weekId}
@@ -588,6 +749,7 @@ export default function FinalesPage() {
             onEnd={handleEnd}
             onToggleLock={handleToggleLock}
             onSchedule={handleSchedule}
+            onReset={handleReset}
           />
         ))}
       </div>

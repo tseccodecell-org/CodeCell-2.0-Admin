@@ -74,6 +74,29 @@ export function setFinaleSchedule(weekId: string, scheduledStartAt: string | nul
   })
 }
 
+export interface AdminTemplate {
+  id: string
+  name: string
+  language: string
+  sourceCode: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ParticipantTemplates {
+  userId: number
+  templateCount: number
+  templates: AdminTemplate[]
+}
+
+export function resetFinale(weekId: string) {
+  return call<FinaleStatusResponse>('POST', `/api/admin/finales/${weekId}/reset`)
+}
+
+export function listParticipantTemplates(weekId: string) {
+  return call<ParticipantTemplates[]>('GET', `/api/admin/finales/${weekId}/participant-templates`)
+}
+
 export function listAccessGrants(weekId: string) {
   return call<FinaleAccessGrantResponse[]>('GET', `/api/admin/finales/${weekId}/access-grants`)
 }
