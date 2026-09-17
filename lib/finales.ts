@@ -13,6 +13,7 @@ export interface AdminFinaleResponse {
   remainingSeconds: number
   liveSince?: string | null
   templatesLocked: boolean
+  entryOpen: boolean
   scheduledStartAt?: string | null
   createdAt: string
 }
@@ -25,6 +26,7 @@ export interface FinaleStatusResponse {
   scoringActive: boolean
   liveSince?: string | null
   templatesLocked: boolean
+  entryOpen: boolean
   scheduledStartAt?: string | null
 }
 
@@ -66,6 +68,10 @@ export function endFinale(weekId: string) {
 
 export function setTemplatesLock(weekId: string, locked: boolean) {
   return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/templates-lock`, { locked })
+}
+
+export function setEntryOpen(weekId: string, open: boolean) {
+  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/entry`, { open })
 }
 
 export function setFinaleSchedule(weekId: string, scheduledStartAt: string | null) {

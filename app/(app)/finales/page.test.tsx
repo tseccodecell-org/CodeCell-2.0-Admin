@@ -24,6 +24,9 @@ vi.mock('@/lib/finales', () => ({
   startFinale: vi.fn(),
   pauseFinale: vi.fn(),
   resumeFinale: vi.fn(),
+  setEntryOpen: vi.fn(),
+  resetFinale: vi.fn(),
+  listParticipantTemplates: vi.fn(),
   setTemplatesLock: vi.fn(),
   setFinaleSchedule: vi.fn(),
   endFinale: vi.fn(),
@@ -47,6 +50,7 @@ function makeFinale(overrides: Partial<AdminFinaleResponse> = {}): AdminFinaleRe
     remainingSeconds: 3600,
     liveSince: null,
     templatesLocked: false,
+    entryOpen: false,
     scheduledStartAt: null,
     createdAt: '2026-09-16T12:00:00Z',
     ...overrides,
@@ -79,6 +83,7 @@ describe('FinalesPage', () => {
       remainingSeconds: 3200,
       scoringActive: false,
       templatesLocked: false,
+      entryOpen: false,
     }
     vi.mocked(pauseFinale).mockResolvedValue(updatedStatus)
 
@@ -246,6 +251,7 @@ describe('FinalesPage', () => {
       remainingSeconds: draftFinale.remainingSeconds,
       scoringActive: true,
       templatesLocked: false,
+      entryOpen: false,
       liveSince: '2026-09-16T13:00:00Z',
     })
 
@@ -269,6 +275,7 @@ describe('FinalesPage', () => {
       remainingSeconds: 0,
       scoringActive: false,
       templatesLocked: false,
+      entryOpen: false,
     })
 
     const user = userEvent.setup()
@@ -327,6 +334,7 @@ describe('finale template window', () => {
       remainingSeconds: finale.remainingSeconds,
       scoringActive: false,
       templatesLocked: true,
+      entryOpen: false,
     })
 
     render(createElement(FinalesPage))

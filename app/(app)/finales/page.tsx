@@ -11,6 +11,7 @@ import {
   resetFinale,
   listParticipantTemplates,
   type ParticipantTemplates,
+  setEntryOpen,
   setTemplatesLock,
   setFinaleSchedule,
   listAccessGrants,
@@ -353,11 +354,12 @@ function ParticipantTemplatesPanel({ finale }: { finale: AdminFinaleResponse }) 
 }
 
 function TemplateWindowPanel({
-  finale, onToggleLock, onSchedule,
+  finale, onToggleLock, onSchedule, onToggleEntry,
 }: {
   finale: AdminFinaleResponse
   onToggleLock: (finale: AdminFinaleResponse, locked: boolean) => void
   onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
+  onToggleEntry: (finale: AdminFinaleResponse, open: boolean) => void
 }) {
   const [draft, setDraft] = useState(toLocalInput(finale.scheduledStartAt))
   const [saving, setSaving] = useState(false)
@@ -395,6 +397,25 @@ function TemplateWindowPanel({
       </div>
 
       <div>
+        <p className="text-xs font-bold text-slate-700">Entry to the contest</p>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+          {finale.entryOpen
+            ? 'Participants can open the contest screen. Problems stay sealed until you start.'
+            : 'The Enter contest button is locked for participants.'}
+        </p>
+        <button
+          onClick={() => onToggleEntry(finale, !finale.entryOpen)}
+          className={
+            finale.entryOpen
+              ? 'mt-2 px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+              : 'mt-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-white'
+          }
+        >
+          {finale.entryOpen ? 'Close entry' : 'Open entry'}
+        </button>
+      </div>
+
+      <div>
         <label htmlFor={`schedule-${finale.weekId}`} className="text-xs font-bold text-slate-700">
           Scheduled start
         </label>
@@ -423,7 +444,7 @@ function TemplateWindowPanel({
 }
 
 function FinaleCard({
-  finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule, onReset,
+  finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule, onReset, onToggleEntry,
 }: {
   finale: AdminFinaleResponse
   onStart: (finale: AdminFinaleResponse) => void
@@ -433,6 +454,7 @@ function FinaleCard({
   onToggleLock: (finale: AdminFinaleResponse, locked: boolean) => void
   onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
   onReset: (finale: AdminFinaleResponse) => void
+  onToggleEntry: (finale: AdminFinaleResponse, open: boolean) => void
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
@@ -448,6 +470,11 @@ function FinaleCard({
             {finale.templatesLocked && (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700">
                 Templates locked
+              </span>
+            )}
+            {finale.entryOpen && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700">
+                Entry open
               </span>
             )}
           </div>
@@ -517,7 +544,12 @@ function FinaleCard({
         </div>
       </div>
 
-      <TemplateWindowPanel finale={finale} onToggleLock={onToggleLock} onSchedule={onSchedule} />
+      <TemplateWindowPanel
+        finale={finale}
+        onToggleLock={onToggleLock}
+        onSchedule={onSchedule}
+        onToggleEntry={onToggleEntry}
+      />
 
       <ParticipantTemplatesPanel finale={finale} />
 
@@ -592,6 +624,20 @@ export default function FinalesPage() {
         }
       },
     })
+  }
+
+  async function handleToggleEntry(finale: AdminFinaleResponse, open: boolean) {
+    setActionError(null)
+    try {
+      const status = await setEntryOpen(finale.weekId, open)
+      patchFinale(finale.weekId, { entryOpen: status.entryOpen })
+    } catch (e) {
+      setActionError(
+        e instanceof Error
+          ? e.message
+          : `Could not ${open ? 'open' : 'close'} entry for "${finale.title}".`
+      )
+    }
   }
 
   async function handleToggleLock(finale: AdminFinaleResponse, locked: boolean) {
@@ -750,6 +796,7 @@ export default function FinalesPage() {
             onToggleLock={handleToggleLock}
             onSchedule={handleSchedule}
             onReset={handleReset}
+            onToggleEntry={handleToggleEntry}
           />
         ))}
       </div>
