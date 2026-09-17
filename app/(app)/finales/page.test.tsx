@@ -13,6 +13,7 @@ import {
   resumeFinale,
   revokeAccess,
   startFinale,
+  setTemplatesLock,
 } from '@/lib/finales'
 import { listUsers, type AdminUserRow } from '@/lib/moderation'
 import FinalesPage from './page'
@@ -23,6 +24,8 @@ vi.mock('@/lib/finales', () => ({
   startFinale: vi.fn(),
   pauseFinale: vi.fn(),
   resumeFinale: vi.fn(),
+  setTemplatesLock: vi.fn(),
+  setFinaleSchedule: vi.fn(),
   endFinale: vi.fn(),
   listAccessGrants: vi.fn(),
   grantAccess: vi.fn(),
@@ -43,6 +46,8 @@ function makeFinale(overrides: Partial<AdminFinaleResponse> = {}): AdminFinaleRe
     state: 'DRAFT',
     remainingSeconds: 3600,
     liveSince: null,
+    templatesLocked: false,
+    scheduledStartAt: null,
     createdAt: '2026-09-16T12:00:00Z',
     ...overrides,
   }
@@ -73,6 +78,7 @@ describe('FinalesPage', () => {
       accessMode: liveFinale.accessMode,
       remainingSeconds: 3200,
       scoringActive: false,
+      templatesLocked: false,
     }
     vi.mocked(pauseFinale).mockResolvedValue(updatedStatus)
 
@@ -239,6 +245,7 @@ describe('FinalesPage', () => {
       accessMode: draftFinale.accessMode,
       remainingSeconds: draftFinale.remainingSeconds,
       scoringActive: true,
+      templatesLocked: false,
       liveSince: '2026-09-16T13:00:00Z',
     })
 
@@ -261,6 +268,7 @@ describe('FinalesPage', () => {
       accessMode: liveFinale.accessMode,
       remainingSeconds: 0,
       scoringActive: false,
+      templatesLocked: false,
     })
 
     const user = userEvent.setup()
@@ -305,5 +313,44 @@ describe('FinalesPage', () => {
 
     expect(await screen.findByText('Season Finale')).toBeInTheDocument()
     expect(screen.getByText('Week 12')).toBeInTheDocument()
+  })
+})
+
+describe('finale template window', () => {
+  it('locks the template library and reflects it back on the card', async () => {
+    const finale = makeFinale({ weekId: 'week-lock' })
+    vi.mocked(listFinales).mockResolvedValue([finale])
+    vi.mocked(setTemplatesLock).mockResolvedValue({
+      weekId: finale.weekId,
+      state: finale.state,
+      accessMode: finale.accessMode,
+      remainingSeconds: finale.remainingSeconds,
+      scoringActive: false,
+      templatesLocked: true,
+    })
+
+    render(createElement(FinalesPage))
+
+    const lock = await screen.findByRole('button', { name: 'Lock templates for review' })
+    await userEvent.click(lock)
+
+    await waitFor(() => expect(setTemplatesLock).toHaveBeenCalledWith('week-lock', true))
+    expect(await screen.findByText('Templates locked')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('button', { name: 'Unlock templates' })
+    ).toBeInTheDocument()
+  })
+
+  it('surfaces a failure to lock instead of silently doing nothing', async () => {
+    vi.mocked(listFinales).mockResolvedValue([makeFinale({ weekId: 'week-lock' })])
+    vi.mocked(setTemplatesLock).mockRejectedValue(new Error('Backend refused the lock'))
+
+    render(createElement(FinalesPage))
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Lock templates for review' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Backend refused the lock')
   })
 })

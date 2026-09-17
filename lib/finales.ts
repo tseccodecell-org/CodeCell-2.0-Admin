@@ -12,6 +12,8 @@ export interface AdminFinaleResponse {
   state: FinaleState
   remainingSeconds: number
   liveSince?: string | null
+  templatesLocked: boolean
+  scheduledStartAt?: string | null
   createdAt: string
 }
 
@@ -22,6 +24,8 @@ export interface FinaleStatusResponse {
   remainingSeconds: number
   scoringActive: boolean
   liveSince?: string | null
+  templatesLocked: boolean
+  scheduledStartAt?: string | null
 }
 
 export interface FinaleAccessGrantResponse {
@@ -58,6 +62,16 @@ export function resumeFinale(weekId: string) {
 
 export function endFinale(weekId: string) {
   return call<FinaleStatusResponse>('POST', `/api/admin/finales/${weekId}/end`)
+}
+
+export function setTemplatesLock(weekId: string, locked: boolean) {
+  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/templates-lock`, { locked })
+}
+
+export function setFinaleSchedule(weekId: string, scheduledStartAt: string | null) {
+  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/schedule`, {
+    scheduledStartAt,
+  })
 }
 
 export function listAccessGrants(weekId: string) {

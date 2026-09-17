@@ -8,6 +8,8 @@ import {
   createFinale,
   endFinale,
   grantAccess,
+  setTemplatesLock,
+  setFinaleSchedule,
   listAccessGrants,
   listFinales,
   pauseFinale,
@@ -217,14 +219,94 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
   )
 }
 
+function toLocalInput(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function TemplateWindowPanel({
+  finale, onToggleLock, onSchedule,
+}: {
+  finale: AdminFinaleResponse
+  onToggleLock: (finale: AdminFinaleResponse, locked: boolean) => void
+  onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
+}) {
+  const [draft, setDraft] = useState(toLocalInput(finale.scheduledStartAt))
+  const [saving, setSaving] = useState(false)
+
+  const locked = finale.templatesLocked
+
+  async function save() {
+    setSaving(true)
+    try {
+      await onSchedule(finale, draft ? new Date(draft).toISOString() : null)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="border-t border-slate-100 pt-4 flex flex-wrap items-end gap-6">
+      <div>
+        <p className="text-xs font-bold text-slate-700">Template window</p>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+          {locked
+            ? 'Participants can read their templates but cannot edit them.'
+            : 'Participants can still add and edit templates.'}
+        </p>
+        <button
+          onClick={() => onToggleLock(finale, !locked)}
+          className={
+            locked
+              ? 'mt-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-white'
+              : 'mt-2 px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+          }
+        >
+          {locked ? 'Unlock templates' : 'Lock templates for review'}
+        </button>
+      </div>
+
+      <div>
+        <label htmlFor={`schedule-${finale.weekId}`} className="text-xs font-bold text-slate-700">
+          Scheduled start
+        </label>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+          Shown to participants as a countdown. You still press Start to open the round.
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            id={`schedule-${finale.weekId}`}
+            type="datetime-local"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700"
+          />
+          <button
+            onClick={save}
+            disabled={saving}
+            className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {saving ? 'Saving' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function FinaleCard({
-  finale, onStart, onPause, onResume, onEnd,
+  finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule,
 }: {
   finale: AdminFinaleResponse
   onStart: (finale: AdminFinaleResponse) => void
   onPause: (finale: AdminFinaleResponse) => void
   onResume: (finale: AdminFinaleResponse) => void
   onEnd: (finale: AdminFinaleResponse) => void
+  onToggleLock: (finale: AdminFinaleResponse, locked: boolean) => void
+  onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
@@ -237,6 +319,11 @@ function FinaleCard({
             <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
               {finale.accessMode === 'RESTRICTED' ? 'Restricted' : 'Open'}
             </span>
+            {finale.templatesLocked && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700">
+                Templates locked
+              </span>
+            )}
           </div>
           {finale.description && <p className="text-sm text-slate-500 mt-1.5 max-w-xl">{finale.description}</p>}
           {finale.state !== 'DRAFT' && finale.state !== 'ENDED' && (
@@ -295,6 +382,8 @@ function FinaleCard({
         </div>
       </div>
 
+      <TemplateWindowPanel finale={finale} onToggleLock={onToggleLock} onSchedule={onSchedule} />
+
       {finale.accessMode === 'RESTRICTED' && <AccessGrantsPanel finale={finale} />}
     </div>
   )
@@ -343,6 +432,32 @@ export default function FinalesPage() {
       })
     } catch (e) {
       setActionError(e instanceof Error ? e.message : `Could not ${action} "${finale.title}".`)
+    }
+  }
+
+  async function handleToggleLock(finale: AdminFinaleResponse, locked: boolean) {
+    setActionError(null)
+    try {
+      const status = await setTemplatesLock(finale.weekId, locked)
+      patchFinale(finale.weekId, { templatesLocked: status.templatesLocked })
+    } catch (e) {
+      setActionError(
+        e instanceof Error
+          ? e.message
+          : `Could not ${locked ? 'lock' : 'unlock'} templates for "${finale.title}".`
+      )
+    }
+  }
+
+  async function handleSchedule(finale: AdminFinaleResponse, scheduledStartAt: string | null) {
+    setActionError(null)
+    try {
+      const status = await setFinaleSchedule(finale.weekId, scheduledStartAt)
+      patchFinale(finale.weekId, { scheduledStartAt: status.scheduledStartAt ?? null })
+    } catch (e) {
+      setActionError(
+        e instanceof Error ? e.message : `Could not set the start time for "${finale.title}".`
+      )
     }
   }
 
@@ -471,6 +586,8 @@ export default function FinalesPage() {
             onPause={handlePause}
             onResume={handleResume}
             onEnd={handleEnd}
+            onToggleLock={handleToggleLock}
+            onSchedule={handleSchedule}
           />
         ))}
       </div>
