@@ -12,6 +12,7 @@ import {
   listParticipantTemplates,
   type ParticipantTemplates,
   setEntryOpen,
+  setFinaleDuration,
   setTemplatesLock,
   setFinaleSchedule,
   listAccessGrants,
@@ -353,13 +354,84 @@ function ParticipantTemplatesPanel({ finale }: { finale: AdminFinaleResponse }) 
   )
 }
 
+function DurationControl({
+  finale, onDuration,
+}: {
+  finale: AdminFinaleResponse
+  onDuration: (finale: AdminFinaleResponse, durationSeconds: number) => Promise<void>
+}) {
+  const total = finale.remainingSeconds
+  const [hours, setHours] = useState(String(Math.floor(total / 3600)))
+  const [minutes, setMinutes] = useState(String(Math.floor((total % 3600) / 60)))
+  const [saving, setSaving] = useState(false)
+
+  const editable = finale.state === 'DRAFT'
+
+  async function save() {
+    setSaving(true)
+    try {
+      await onDuration(finale, Number(hours || 0) * 3600 + Number(minutes || 0) * 60)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-bold text-slate-700">Round length</p>
+      <p className="text-xs text-slate-500 mt-1 max-w-sm">
+        {editable
+          ? 'How long the round runs once you start it.'
+          : 'Only a finale that has not started can be re-timed. Reset to draft to change it.'}
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <label className="sr-only" htmlFor={`hours-${finale.weekId}`}>
+          Hours
+        </label>
+        <input
+          id={`hours-${finale.weekId}`}
+          type="number"
+          min={0}
+          value={hours}
+          disabled={!editable}
+          onChange={e => setHours(e.target.value)}
+          className="w-16 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700 disabled:bg-slate-50 disabled:text-slate-400"
+        />
+        <span className="text-xs text-slate-500">hr</span>
+        <label className="sr-only" htmlFor={`minutes-${finale.weekId}`}>
+          Minutes
+        </label>
+        <input
+          id={`minutes-${finale.weekId}`}
+          type="number"
+          min={0}
+          max={59}
+          value={minutes}
+          disabled={!editable}
+          onChange={e => setMinutes(e.target.value)}
+          className="w-16 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700 disabled:bg-slate-50 disabled:text-slate-400"
+        />
+        <span className="text-xs text-slate-500">min</span>
+        <button
+          onClick={save}
+          disabled={!editable || saving}
+          className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {saving ? 'Saving' : 'Save'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function TemplateWindowPanel({
-  finale, onToggleLock, onSchedule, onToggleEntry,
+  finale, onToggleLock, onSchedule, onToggleEntry, onDuration,
 }: {
   finale: AdminFinaleResponse
   onToggleLock: (finale: AdminFinaleResponse, locked: boolean) => void
   onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
   onToggleEntry: (finale: AdminFinaleResponse, open: boolean) => void
+  onDuration: (finale: AdminFinaleResponse, durationSeconds: number) => Promise<void>
 }) {
   const [draft, setDraft] = useState(toLocalInput(finale.scheduledStartAt))
   const [saving, setSaving] = useState(false)
@@ -415,6 +487,8 @@ function TemplateWindowPanel({
         </button>
       </div>
 
+      <DurationControl finale={finale} onDuration={onDuration} />
+
       <div>
         <label htmlFor={`schedule-${finale.weekId}`} className="text-xs font-bold text-slate-700">
           Scheduled start
@@ -445,6 +519,7 @@ function TemplateWindowPanel({
 
 function FinaleCard({
   finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule, onReset, onToggleEntry,
+  onDuration,
 }: {
   finale: AdminFinaleResponse
   onStart: (finale: AdminFinaleResponse) => void
@@ -455,6 +530,7 @@ function FinaleCard({
   onSchedule: (finale: AdminFinaleResponse, scheduledStartAt: string | null) => void
   onReset: (finale: AdminFinaleResponse) => void
   onToggleEntry: (finale: AdminFinaleResponse, open: boolean) => void
+  onDuration: (finale: AdminFinaleResponse, durationSeconds: number) => Promise<void>
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
@@ -549,6 +625,7 @@ function FinaleCard({
         onToggleLock={onToggleLock}
         onSchedule={onSchedule}
         onToggleEntry={onToggleEntry}
+        onDuration={onDuration}
       />
 
       <ParticipantTemplatesPanel finale={finale} />
@@ -624,6 +701,18 @@ export default function FinalesPage() {
         }
       },
     })
+  }
+
+  async function handleDuration(finale: AdminFinaleResponse, durationSeconds: number) {
+    setActionError(null)
+    try {
+      const status = await setFinaleDuration(finale.weekId, durationSeconds)
+      patchFinale(finale.weekId, { remainingSeconds: status.remainingSeconds })
+    } catch (e) {
+      setActionError(
+        e instanceof Error ? e.message : `Could not change the length of "${finale.title}".`
+      )
+    }
   }
 
   async function handleToggleEntry(finale: AdminFinaleResponse, open: boolean) {
@@ -797,6 +886,7 @@ export default function FinalesPage() {
             onSchedule={handleSchedule}
             onReset={handleReset}
             onToggleEntry={handleToggleEntry}
+            onDuration={handleDuration}
           />
         ))}
       </div>

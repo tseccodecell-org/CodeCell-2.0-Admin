@@ -70,6 +70,12 @@ export function setTemplatesLock(weekId: string, locked: boolean) {
   return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/templates-lock`, { locked })
 }
 
+export function setFinaleDuration(weekId: string, durationSeconds: number) {
+  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/duration`, {
+    durationSeconds,
+  })
+}
+
 export function setEntryOpen(weekId: string, open: boolean) {
   return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/entry`, { open })
 }

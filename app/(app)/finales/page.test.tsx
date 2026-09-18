@@ -25,6 +25,7 @@ vi.mock('@/lib/finales', () => ({
   pauseFinale: vi.fn(),
   resumeFinale: vi.fn(),
   setEntryOpen: vi.fn(),
+  setFinaleDuration: vi.fn(),
   resetFinale: vi.fn(),
   listParticipantTemplates: vi.fn(),
   setTemplatesLock: vi.fn(),
