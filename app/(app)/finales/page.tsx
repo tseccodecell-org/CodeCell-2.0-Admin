@@ -13,6 +13,8 @@ import {
   type ParticipantTemplates,
   setEntryOpen,
   setFinaleDuration,
+  setTemplatesAccess,
+  setInternshipAccess,
   setTemplatesLock,
   setFinaleSchedule,
   listAccessGrants,
@@ -354,6 +356,70 @@ function ParticipantTemplatesPanel({ finale }: { finale: AdminFinaleResponse }) 
   )
 }
 
+function GateButton({
+  open, openLabel, closeLabel, onToggle,
+}: {
+  open: boolean
+  openLabel: string
+  closeLabel: string
+  onToggle: (open: boolean) => void
+}) {
+  return (
+    <button
+      onClick={() => onToggle(!open)}
+      className={
+        open
+          ? 'mt-2 px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+          : 'mt-2 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-white'
+      }
+    >
+      {open ? closeLabel : openLabel}
+    </button>
+  )
+}
+
+function ParticipantActionsPanel({
+  finale, onTemplatesAccess, onInternshipAccess,
+}: {
+  finale: AdminFinaleResponse
+  onTemplatesAccess: (finale: AdminFinaleResponse, open: boolean) => void
+  onInternshipAccess: (finale: AdminFinaleResponse, open: boolean) => void
+}) {
+  return (
+    <div className="border-t border-slate-100 pt-4 flex flex-wrap items-start gap-8">
+      <div>
+        <p className="text-xs font-bold text-slate-700">Load your templates</p>
+        <p className="text-xs text-slate-500 mt-1 max-w-xs">
+          {finale.templatesOpen
+            ? 'Seated participants can open the template editor.'
+            : 'The button is locked for participants.'}
+        </p>
+        <GateButton
+          open={finale.templatesOpen}
+          openLabel="Unlock templates button"
+          closeLabel="Lock templates button"
+          onToggle={open => onTemplatesAccess(finale, open)}
+        />
+      </div>
+
+      <div>
+        <p className="text-xs font-bold text-slate-700">Apply for the internship</p>
+        <p className="text-xs text-slate-500 mt-1 max-w-xs">
+          {finale.internshipOpen
+            ? 'Seated participants can submit the application form.'
+            : 'The button is locked for participants.'}
+        </p>
+        <GateButton
+          open={finale.internshipOpen}
+          openLabel="Unlock internship button"
+          closeLabel="Lock internship button"
+          onToggle={open => onInternshipAccess(finale, open)}
+        />
+      </div>
+    </div>
+  )
+}
+
 function DurationControl({
   finale, onDuration,
 }: {
@@ -519,7 +585,7 @@ function TemplateWindowPanel({
 
 function FinaleCard({
   finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule, onReset, onToggleEntry,
-  onDuration,
+  onDuration, onTemplatesAccess, onInternshipAccess,
 }: {
   finale: AdminFinaleResponse
   onStart: (finale: AdminFinaleResponse) => void
@@ -531,6 +597,8 @@ function FinaleCard({
   onReset: (finale: AdminFinaleResponse) => void
   onToggleEntry: (finale: AdminFinaleResponse, open: boolean) => void
   onDuration: (finale: AdminFinaleResponse, durationSeconds: number) => Promise<void>
+  onTemplatesAccess: (finale: AdminFinaleResponse, open: boolean) => void
+  onInternshipAccess: (finale: AdminFinaleResponse, open: boolean) => void
 }) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
@@ -551,6 +619,16 @@ function FinaleCard({
             {finale.entryOpen && (
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700">
                 Entry open
+              </span>
+            )}
+            {finale.templatesOpen && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-sky-100 text-sky-700">
+                Templates open
+              </span>
+            )}
+            {finale.internshipOpen && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-violet-100 text-violet-700">
+                Internship open
               </span>
             )}
           </div>
@@ -628,6 +706,12 @@ function FinaleCard({
         onDuration={onDuration}
       />
 
+      <ParticipantActionsPanel
+        finale={finale}
+        onTemplatesAccess={onTemplatesAccess}
+        onInternshipAccess={onInternshipAccess}
+      />
+
       <ParticipantTemplatesPanel finale={finale} />
 
       {finale.accessMode === 'RESTRICTED' && <AccessGrantsPanel finale={finale} />}
@@ -701,6 +785,30 @@ export default function FinalesPage() {
         }
       },
     })
+  }
+
+  async function handleTemplatesAccess(finale: AdminFinaleResponse, open: boolean) {
+    setActionError(null)
+    try {
+      const status = await setTemplatesAccess(finale.weekId, open)
+      patchFinale(finale.weekId, { templatesOpen: status.templatesOpen })
+    } catch (e) {
+      setActionError(
+        e instanceof Error ? e.message : `Could not change the templates button for "${finale.title}".`
+      )
+    }
+  }
+
+  async function handleInternshipAccess(finale: AdminFinaleResponse, open: boolean) {
+    setActionError(null)
+    try {
+      const status = await setInternshipAccess(finale.weekId, open)
+      patchFinale(finale.weekId, { internshipOpen: status.internshipOpen })
+    } catch (e) {
+      setActionError(
+        e instanceof Error ? e.message : `Could not change the internship button for "${finale.title}".`
+      )
+    }
   }
 
   async function handleDuration(finale: AdminFinaleResponse, durationSeconds: number) {
@@ -887,6 +995,8 @@ export default function FinalesPage() {
             onReset={handleReset}
             onToggleEntry={handleToggleEntry}
             onDuration={handleDuration}
+            onTemplatesAccess={handleTemplatesAccess}
+            onInternshipAccess={handleInternshipAccess}
           />
         ))}
       </div>

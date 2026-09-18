@@ -14,6 +14,8 @@ export interface AdminFinaleResponse {
   liveSince?: string | null
   templatesLocked: boolean
   entryOpen: boolean
+  templatesOpen: boolean
+  internshipOpen: boolean
   scheduledStartAt?: string | null
   createdAt: string
 }
@@ -27,6 +29,8 @@ export interface FinaleStatusResponse {
   liveSince?: string | null
   templatesLocked: boolean
   entryOpen: boolean
+  templatesOpen: boolean
+  internshipOpen: boolean
   scheduledStartAt?: string | null
 }
 
@@ -68,6 +72,18 @@ export function endFinale(weekId: string) {
 
 export function setTemplatesLock(weekId: string, locked: boolean) {
   return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/templates-lock`, { locked })
+}
+
+export function setTemplatesAccess(weekId: string, open: boolean) {
+  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/templates-access`, {
+    open,
+  })
+}
+
+export function setInternshipAccess(weekId: string, open: boolean) {
+  return call<FinaleStatusResponse>('PUT', `/api/admin/finales/${weekId}/internship-access`, {
+    open,
+  })
 }
 
 export function setFinaleDuration(weekId: string, durationSeconds: number) {
