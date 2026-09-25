@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 import { listUsers, type AdminUserRow } from '@/lib/moderation'
+import { useUserNames, type UserLabel } from '@/lib/useUserNames'
+import FinaleSubmissionsPanel, { type SubmissionsFocus } from '@/components/FinaleSubmissionsPanel'
 import {
   createFinale,
   endFinale,
@@ -72,7 +74,14 @@ type CreateForm = {
 
 const emptyForm: CreateForm = { title: '', description: '', durationMinutes: '60', accessMode: 'RESTRICTED' }
 
-function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
+function AccessGrantsPanel({
+  finale, names, onGrantsChange, onShowSubmissions,
+}: {
+  finale: AdminFinaleResponse
+  names: Record<number, UserLabel>
+  onGrantsChange: (userIds: number[]) => void
+  onShowSubmissions: (userId: number) => void
+}) {
   const [grants, setGrants] = useState<FinaleAccessGrantResponse[]>([])
   const [loadingGrants, setLoadingGrants] = useState(true)
   const [grantsError, setGrantsError] = useState<string | null>(null)
@@ -90,11 +99,13 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
     try {
       const data = await listAccessGrants(finale.weekId)
       setGrants(data ?? [])
+      onGrantsChange((data ?? []).map(g => g.userId))
     } catch (e) {
       setGrantsError(e instanceof Error ? e.message : 'Could not load access grants.')
     } finally {
       setLoadingGrants(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finale.weekId])
 
   useEffect(() => { loadGrants() }, [loadGrants])
@@ -207,9 +218,20 @@ function AccessGrantsPanel({ finale }: { finale: AdminFinaleResponse }) {
         <ul className="flex flex-col gap-1.5">
           {grants.map(g => (
             <li key={g.userId} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50">
-              <span className="text-sm text-slate-700">{userNameCache[g.userId] ?? `User #${g.userId}`}</span>
+              <span className="text-sm text-slate-700">
+                {names[g.userId]?.name ?? userNameCache[g.userId] ?? `User #${g.userId}`}
+                {names[g.userId]?.username && (
+                  <span className="ml-2 text-slate-400 font-mono text-xs">@{names[g.userId].username}</span>
+                )}
+              </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400">{new Date(g.grantedAt).toLocaleDateString()}</span>
+                <button
+                  onClick={() => onShowSubmissions(g.userId)}
+                  className="px-2.5 py-1 text-xs font-bold rounded-md border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white"
+                >
+                  Submissions
+                </button>
                 <button
                   onClick={() => handleRevoke(g.userId)}
                   disabled={pendingUserId === g.userId}
@@ -270,7 +292,7 @@ function ScoringNote() {
   )
 }
 
-function ParticipantTemplatesPanel({ finale }: { finale: AdminFinaleResponse }) {
+function ParticipantTemplatesPanel({ finale, names }: { finale: AdminFinaleResponse; names: Record<number, UserLabel> }) {
   const [rows, setRows] = useState<ParticipantTemplates[] | null>(null)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -322,7 +344,7 @@ function ParticipantTemplatesPanel({ finale }: { finale: AdminFinaleResponse }) 
               {rows.map(row => (
                 <details key={row.userId} className="border border-slate-200 rounded-lg">
                   <summary className="px-3 py-2 text-xs font-bold text-slate-700 cursor-pointer flex items-center justify-between">
-                    <span>User #{row.userId}</span>
+                    <span>{names[row.userId]?.name ?? `User #${row.userId}`}</span>
                     <span className="font-normal text-slate-500">
                       {row.templateCount === 0
                         ? 'no templates'
@@ -600,6 +622,10 @@ function FinaleCard({
   onTemplatesAccess: (finale: AdminFinaleResponse, open: boolean) => void
   onInternshipAccess: (finale: AdminFinaleResponse, open: boolean) => void
 }) {
+  const [participantIds, setParticipantIds] = useState<number[]>([])
+  const [focus, setFocus] = useState<SubmissionsFocus | null>(null)
+  const names = useUserNames(participantIds)
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -712,9 +738,23 @@ function FinaleCard({
         onInternshipAccess={onInternshipAccess}
       />
 
-      <ParticipantTemplatesPanel finale={finale} />
+      <ParticipantTemplatesPanel finale={finale} names={names} />
 
-      {finale.accessMode === 'RESTRICTED' && <AccessGrantsPanel finale={finale} />}
+      <FinaleSubmissionsPanel
+        weekId={finale.weekId}
+        participants={participantIds}
+        names={names}
+        focus={focus}
+      />
+
+      {finale.accessMode === 'RESTRICTED' && (
+        <AccessGrantsPanel
+          finale={finale}
+          names={names}
+          onGrantsChange={setParticipantIds}
+          onShowSubmissions={userId => setFocus({ userId, nonce: Date.now() })}
+        />
+      )}
     </div>
   )
 }

@@ -15,7 +15,7 @@ import {
   startFinale,
   setTemplatesLock,
 } from '@/lib/finales'
-import { listUsers, type AdminUserRow } from '@/lib/moderation'
+import { getUser, listSubmissions, listUsers, type AdminUserRow } from '@/lib/moderation'
 import FinalesPage from './page'
 
 vi.mock('@/lib/finales', () => ({
@@ -40,6 +40,11 @@ vi.mock('@/lib/finales', () => ({
 
 vi.mock('@/lib/moderation', () => ({
   listUsers: vi.fn(),
+  getUser: vi.fn(() => Promise.reject(new Error('not mocked'))),
+  listSubmissions: vi.fn(() => Promise.resolve({ submissions: [], total: 0 })),
+  getSubmission: vi.fn(),
+  invalidateSubmission: vi.fn(),
+  restoreSubmission: vi.fn(),
 }))
 
 function makeFinale(overrides: Partial<AdminFinaleResponse> = {}): AdminFinaleResponse {
@@ -218,6 +223,47 @@ describe('FinalesPage', () => {
 
     await waitFor(() => expect(screen.getAllByText('Ada Lovelace').length).toBeGreaterThanOrEqual(2))
     expect(screen.queryByText('User #7')).not.toBeInTheDocument()
+  })
+
+  it('shows each seated participant by name without searching first', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-names', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    vi.mocked(listAccessGrants).mockResolvedValue([{ userId: 41, grantedAt: '2026-09-16T12:00:00Z' }])
+    vi.mocked(getUser).mockResolvedValue({
+      id: 41, name: 'Grace Hopper', username: 'grace', email: 'grace@example.com',
+      isTsecUser: true, rating: 0, seasonXp: 0, isBanned: false,
+    })
+
+    render(createElement(FinalesPage))
+
+    expect(await screen.findByText('Grace Hopper')).toBeInTheDocument()
+    expect(screen.getByText('@grace')).toBeInTheDocument()
+    expect(screen.queryByText('User #41')).not.toBeInTheDocument()
+  })
+
+  it('opens the submissions review filtered to a participant from their grant', async () => {
+    const restrictedFinale = makeFinale({ weekId: 'week-subs', accessMode: 'RESTRICTED' })
+    vi.mocked(listFinales).mockResolvedValue([restrictedFinale])
+    vi.mocked(listAccessGrants).mockResolvedValue([{ userId: 52, grantedAt: '2026-09-16T12:00:00Z' }])
+    vi.mocked(listSubmissions).mockResolvedValue({
+      submissions: [{
+        id: 'sub-1', userId: 52, username: 'linus', problemId: 'p-1', problemName: 'Ladders',
+        language: 'CPP', status: 'COMPLETED', verdict: 'ACCEPTED', score: 100, invalidated: false,
+        submittedAt: '2026-09-26T10:12:00Z', weekId: 'week-subs',
+      }],
+      total: 1,
+    })
+
+    const user = userEvent.setup()
+    render(createElement(FinalesPage))
+
+    await user.click(await screen.findByRole('button', { name: 'Submissions' }))
+
+    await waitFor(() =>
+      expect(listSubmissions).toHaveBeenCalledWith(expect.objectContaining({ weekId: 'week-subs', userId: 52 }))
+    )
+    expect(await screen.findByText('Ladders')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Invalidate' })).toBeInTheDocument()
   })
 
   it('surfaces a visible error instead of silently emptying results when participant search fails', async () => {

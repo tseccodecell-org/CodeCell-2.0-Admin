@@ -105,6 +105,8 @@ export function listSubmissions(params: {
   problemId?: string
   weekId?: string
   userId?: number
+  verdict?: string
+  invalidated?: boolean
   limit?: number
   offset?: number
 }) {
@@ -112,6 +114,8 @@ export function listSubmissions(params: {
   if (params.problemId) q.set('problemId', params.problemId)
   if (params.weekId) q.set('weekId', params.weekId)
   if (params.userId) q.set('userId', String(params.userId))
+  if (params.verdict) q.set('verdict', params.verdict)
+  if (params.invalidated !== undefined) q.set('invalidated', String(params.invalidated))
   q.set('limit', String(params.limit ?? 50))
   q.set('offset', String(params.offset ?? 0))
   return call<{ submissions: AdminSubmissionRow[]; total: number }>(
