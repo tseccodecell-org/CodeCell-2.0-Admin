@@ -117,6 +117,7 @@ export type WeekFormInput = Partial<Week> & {
 export interface DataContextValue {
   weeks: Week[]
   events: EventItem[]
+  weeksStatus: 'loading' | 'ready' | 'error'
   refreshWeeks: () => Promise<void>
 
   addWeek: (data: WeekFormInput) => Promise<void>

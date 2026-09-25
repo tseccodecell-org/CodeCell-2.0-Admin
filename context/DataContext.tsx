@@ -34,6 +34,7 @@ function normalisedBasePoints(value: number | string | undefined): number {
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [weeks, setWeeks] = useState<Week[]>([])
+  const [weeksStatus, setWeeksStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   // events api isn't built yet (Sanket's), so events stay mock for now
   const [events, setEvents] = useState<EventItem[]>(initialEvents)
   const pathname = usePathname()
@@ -75,8 +76,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }
 
   async function refreshWeeks() {
+    setWeeksStatus('loading')
     try {
-      const body = await api('GET', '/api/admin/weeks')
+      const body = await api('GET', '/api/admin/weeks', undefined, { silent: true })
 
       // the list api gives {id,title,weekNumber,active,problemCount};
       // the problems for each week come from the admin route below
@@ -136,8 +138,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }))
 
       setWeeks(withProblems)
+      setWeeksStatus('ready')
     } catch (e) {
-      console.error('could not load weeks — is the go backend running on :8000?', e)
+      console.error('could not load weeks', e)
+      loadedRef.current = false
+      setWeeksStatus('error')
     }
   }
 
@@ -389,7 +394,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <DataContext.Provider value={{
-      weeks, events, refreshWeeks,
+      weeks, weeksStatus, events, refreshWeeks,
       addWeek, updateWeek, deleteWeek,
       addProblem, deleteProblem, updateProblem, reorderProblems, moveProblemToWeek,
       getTestCases, updateTestCase, deleteTestCase, getLanguageConfigs, getChecker,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -203,7 +203,7 @@ export default function WeekDetail() {
   const { weekId } = useParams<{ weekId: string }>()
   const router = useRouter()
   const {
-    weeks, deleteProblem, updateWeek, deleteWeek, refreshWeeks,
+    weeks, weeksStatus, deleteProblem, updateWeek, deleteWeek, refreshWeeks,
     reorderProblems, moveProblemToWeek,
   } = useData()
 
@@ -245,9 +245,35 @@ export default function WeekDetail() {
     })
   }, [loadedId, loadedTitle, loadedDescription, loadedStartDate, loadedStartTime, loadedEndDate, loadedEndTime])
 
-  if (!week) return (
-    <div className="flex items-center justify-center h-full text-slate-400 text-sm">Week not found.</div>
-  )
+  const refetchedForRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (week || weeksStatus !== 'ready' || refetchedForRef.current === weekId) return
+    refetchedForRef.current = weekId
+    refreshWeeks()
+  }, [week, weeksStatus, weekId, refreshWeeks])
+
+  if (!week) {
+    const waiting = weeksStatus === 'loading' || (weeksStatus === 'ready' && refetchedForRef.current !== weekId)
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 h-full text-slate-400 text-sm">
+        {waiting ? (
+          <p>Loading the week.</p>
+        ) : weeksStatus === 'error' ? (
+          <>
+            <p>Couldn&apos;t load the weeks. The server may be restarting.</p>
+            <button
+              onClick={() => refreshWeeks()}
+              className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            >
+              Try again
+            </button>
+          </>
+        ) : (
+          <p>Week not found.</p>
+        )}
+      </div>
+    )
+  }
 
   const totalScore = week.problems.reduce((s, p) => s + (p.basePoints || 0), 0)
   const slug = week.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
