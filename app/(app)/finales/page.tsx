@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 import { listUsers, type AdminUserRow } from '@/lib/moderation'
 import { useUserNames, type UserLabel } from '@/lib/useUserNames'
 import FinaleSubmissionsPanel, { type SubmissionsFocus } from '@/components/FinaleSubmissionsPanel'
-import FinaleProctoringPanel from '@/components/FinaleProctoringPanel'
+import FinaleProctoringPanel, { type Seat } from '@/components/FinaleProctoringPanel'
 import {
   createFinale,
   endFinale,
@@ -31,6 +31,8 @@ import {
   type FinaleAccessMode,
   type FinaleState,
 } from '@/lib/finales'
+
+const tileCls = 'rounded-xl border border-slate-200 p-4 flex flex-col items-start'
 
 const inputCls = 'w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 bg-white'
 
@@ -75,172 +77,95 @@ type CreateForm = {
 
 const emptyForm: CreateForm = { title: '', description: '', durationMinutes: '60', accessMode: 'RESTRICTED' }
 
-function AccessGrantsPanel({
-  finale, names, onGrantsChange, onShowSubmissions,
-}: {
-  finale: AdminFinaleResponse
-  names: Record<number, UserLabel>
-  onGrantsChange: (userIds: number[]) => void
-  onShowSubmissions: (userId: number) => void
-}) {
+function useAccessGrants(weekId: string, enabled: boolean) {
   const [grants, setGrants] = useState<FinaleAccessGrantResponse[]>([])
-  const [loadingGrants, setLoadingGrants] = useState(true)
-  const [grantsError, setGrantsError] = useState<string | null>(null)
-  const [searching, setSearching] = useState(false)
+  const [loading, setLoading] = useState(enabled)
+  const [error, setError] = useState<string | null>(null)
+
+  const reload = useCallback(async () => {
+    if (!enabled) return
+    setLoading(true)
+    setError(null)
+    try {
+      setGrants((await listAccessGrants(weekId)) ?? [])
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load access grants.')
+    } finally {
+      setLoading(false)
+    }
+  }, [weekId, enabled])
+
+  useEffect(() => { reload() }, [reload])
+
+  return { grants, loading, error, reload }
+}
+
+function GrantSearch({
+  grantedIds, pendingUserId, onGrant, onNames, onClose,
+}: {
+  grantedIds: Set<number>
+  pendingUserId: number | null
+  onGrant: (userId: number) => void
+  onNames: (names: Record<number, string>) => void
+  onClose: () => void
+}) {
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<AdminUserRow[]>([])
   const [searchError, setSearchError] = useState<string | null>(null)
-  const [pendingUserId, setPendingUserId] = useState<number | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [userNameCache, setUserNameCache] = useState<Record<number, string>>({})
-
-  const loadGrants = useCallback(async () => {
-    setLoadingGrants(true)
-    setGrantsError(null)
-    try {
-      const data = await listAccessGrants(finale.weekId)
-      setGrants(data ?? [])
-      onGrantsChange((data ?? []).map(g => g.userId))
-    } catch (e) {
-      setGrantsError(e instanceof Error ? e.message : 'Could not load access grants.')
-    } finally {
-      setLoadingGrants(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finale.weekId])
-
-  useEffect(() => { loadGrants() }, [loadGrants])
 
   useEffect(() => {
-    if (!searching) return
     const timer = setTimeout(async () => {
       setSearchError(null)
       try {
         const data = await listUsers(search)
         const users = data.users ?? []
         setResults(users)
-        setUserNameCache(prev => {
-          const next = { ...prev }
-          for (const u of users) next[u.id] = u.name || u.username
-          return next
-        })
+        const found: Record<number, string> = {}
+        for (const u of users) found[u.id] = u.name || u.username
+        onNames(found)
       } catch (e) {
         setResults([])
         setSearchError(e instanceof Error ? e.message : 'Could not search participants.')
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [search, searching])
-
-  const grantedIds = new Set(grants.map(g => g.userId))
-
-  async function handleGrant(userId: number) {
-    setPendingUserId(userId)
-    setActionError(null)
-    try {
-      await grantAccess(finale.weekId, userId)
-      await loadGrants()
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not grant access.')
-    } finally {
-      setPendingUserId(null)
-    }
-  }
-
-  async function handleRevoke(userId: number) {
-    setPendingUserId(userId)
-    setActionError(null)
-    try {
-      await revokeAccess(finale.weekId, userId)
-      await loadGrants()
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Could not revoke access.')
-    } finally {
-      setPendingUserId(null)
-    }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
 
   return (
-    <div className="border-t border-slate-100 pt-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Access Grants</h4>
+    <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+      <div className="flex items-center gap-2">
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Escape') onClose() }}
+          placeholder="Search participants by name, username or email..."
+          className={inputCls}
+          autoFocus
+        />
         <button
-          onClick={() => {
-            setSearching(s => !s)
-            setSearchError(null)
-          }}
-          className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+          onClick={onClose}
+          className="shrink-0 px-3 py-2.5 text-xs font-bold rounded-lg text-slate-600 hover:bg-white"
         >
-          Grant access
+          Done
         </button>
       </div>
-
-      {actionError && <p role="alert" className="text-xs text-rose-600 mb-3">{actionError}</p>}
-
-      {searching && (
-        <div className="mb-3">
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search participants by name, username or email..."
-            className={inputCls}
-            autoFocus
-          />
-          {searchError && <p role="alert" className="text-xs text-rose-600 mt-2">{searchError}</p>}
-          {results.length > 0 && (
-            <ul className="mt-2 flex flex-col gap-1 max-h-48 overflow-y-auto">
-              {results.map(user => (
-                <li key={user.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-100">
-                  <span className="text-sm text-slate-700">
-                    {user.name || user.username}{' '}
-                    <span className="text-slate-400 font-mono text-xs">@{user.username}</span>
-                  </span>
-                  <button
-                    onClick={() => handleGrant(user.id)}
-                    disabled={pendingUserId === user.id || grantedIds.has(user.id)}
-                    className="px-2.5 py-1 text-xs font-bold rounded-md bg-slate-900 text-white disabled:opacity-40"
-                  >
-                    {grantedIds.has(user.id) ? 'Granted' : pendingUserId === user.id ? 'Granting...' : 'Grant'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {loadingGrants ? (
-        <p className="text-xs text-slate-400">Loading access grants...</p>
-      ) : grantsError ? (
-        <p className="text-xs text-rose-600">{grantsError}</p>
-      ) : grants.length === 0 ? (
-        <p className="text-xs text-slate-400">No one has been granted access yet.</p>
-      ) : (
-        <ul className="flex flex-col gap-1.5">
-          {grants.map(g => (
-            <li key={g.userId} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50">
-              <span className="text-sm text-slate-700">
-                {names[g.userId]?.name ?? userNameCache[g.userId] ?? `User #${g.userId}`}
-                {names[g.userId]?.username && (
-                  <span className="ml-2 text-slate-400 font-mono text-xs">@{names[g.userId].username}</span>
-                )}
+      {searchError && <p role="alert" className="text-xs text-rose-600 mt-2">{searchError}</p>}
+      {results.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-1 max-h-60 overflow-y-auto">
+          {results.map(user => (
+            <li key={user.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-white border border-slate-100">
+              <span className="min-w-0 text-sm text-slate-700">
+                <span className="block truncate">{user.name || user.username}</span>
+                <span className="block truncate text-slate-400 font-mono text-xs">@{user.username}</span>
               </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">{new Date(g.grantedAt).toLocaleDateString()}</span>
-                <button
-                  onClick={() => onShowSubmissions(g.userId)}
-                  className="px-2.5 py-1 text-xs font-bold rounded-md border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white"
-                >
-                  Submissions
-                </button>
-                <button
-                  onClick={() => handleRevoke(g.userId)}
-                  disabled={pendingUserId === g.userId}
-                  className="px-2.5 py-1 text-xs font-bold rounded-md border border-slate-200 text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
-                >
-                  Revoke
-                </button>
-              </div>
+              <button
+                onClick={() => onGrant(user.id)}
+                disabled={pendingUserId === user.id || grantedIds.has(user.id)}
+                className="shrink-0 px-2.5 py-1 text-xs font-bold rounded-md bg-slate-900 text-white disabled:opacity-40"
+              >
+                {grantedIds.has(user.id) ? 'Granted' : pendingUserId === user.id ? 'Granting...' : 'Grant'}
+              </button>
             </li>
           ))}
         </ul>
@@ -295,11 +220,10 @@ function ScoringNote() {
 
 function ParticipantTemplatesPanel({ finale, names }: { finale: AdminFinaleResponse; names: Record<number, UserLabel> }) {
   const [rows, setRows] = useState<ParticipantTemplates[] | null>(null)
-  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -309,70 +233,73 @@ function ParticipantTemplatesPanel({ finale, names }: { finale: AdminFinaleRespo
     } finally {
       setLoading(false)
     }
-  }
+  }, [finale.weekId])
 
-  function toggle() {
-    const next = !open
-    setOpen(next)
-    if (next && rows === null) load()
-  }
+  useEffect(() => { load() }, [load])
 
   const total = rows?.reduce((sum, r) => sum + r.templateCount, 0) ?? 0
 
   return (
-    <div className="border-t border-slate-100 pt-4">
-      <button
-        onClick={toggle}
-        className="text-xs font-bold text-slate-700 hover:text-slate-900"
-      >
-        {open ? 'Hide' : 'Review'} participant templates
-        {rows && <span className="font-normal text-slate-500"> · {total} saved</span>}
-      </button>
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-slate-700">
+          {rows ? `${total} ${total === 1 ? 'template' : 'templates'} saved` : 'Participant templates'}
+        </p>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="px-2.5 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+        >
+          {loading ? 'Loading...' : 'Refresh'}
+        </button>
+      </div>
 
-      {open && (
-        <div className="mt-3">
-          {loading && <p className="text-xs text-slate-500">Loading templates</p>}
-          {error && <p role="alert" className="text-xs text-rose-600">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-xs text-rose-600">{error}</p>}
 
-          {rows && rows.length === 0 && (
-            <p className="text-xs text-slate-500">
-              Nobody has been granted access yet, so there is nothing to review.
-            </p>
-          )}
+      {rows && rows.length === 0 && (
+        <p className="mt-3 text-xs text-slate-500">Nobody has been granted access yet, so there is nothing to review.</p>
+      )}
 
-          {rows && rows.length > 0 && (
-            <div className="flex flex-col gap-2">
-              {rows.map(row => (
-                <details key={row.userId} className="border border-slate-200 rounded-lg">
-                  <summary className="px-3 py-2 text-xs font-bold text-slate-700 cursor-pointer flex items-center justify-between">
-                    <span>{names[row.userId]?.name ?? `User #${row.userId}`}</span>
-                    <span className="font-normal text-slate-500">
-                      {row.templateCount === 0
-                        ? 'no templates'
-                        : row.templateCount === 1
-                          ? '1 template'
-                          : `${row.templateCount} templates`}
-                    </span>
-                  </summary>
-                  {row.templates.length > 0 && (
-                    <div className="border-t border-slate-100 p-3 flex flex-col gap-3">
-                      {row.templates.map(t => (
-                        <div key={t.id}>
-                          <p className="text-xs font-bold text-slate-700">
-                            {t.name}
-                            <span className="ml-2 font-normal text-slate-500">{t.language}</span>
-                          </p>
-                          <pre className="mt-1.5 max-h-64 overflow-auto rounded bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap break-words">
-                            {t.sourceCode || '(empty)'}
-                          </pre>
-                        </div>
-                      ))}
+      {rows && rows.length > 0 && (
+        <div className="mt-3 rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+          {rows.map(row => (
+            <details key={row.userId} className="group">
+              <summary className="px-4 py-3 text-sm cursor-pointer flex items-center justify-between gap-3 hover:bg-slate-50 list-none">
+                <span className="font-semibold text-slate-800 truncate">{names[row.userId]?.name ?? `User #${row.userId}`}</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  <span
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                      row.templateCount === 0 ? 'bg-slate-100 text-slate-500' : 'bg-sky-50 text-sky-700'
+                    }`}
+                  >
+                    {row.templateCount === 0
+                      ? 'no templates'
+                      : row.templateCount === 1
+                        ? '1 template'
+                        : `${row.templateCount} templates`}
+                  </span>
+                  <svg className="w-3.5 h-3.5 text-slate-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
+              </summary>
+              {row.templates.length > 0 && (
+                <div className="border-t border-slate-100 bg-slate-50/50 p-3 sm:p-4 flex flex-col gap-3">
+                  {row.templates.map(t => (
+                    <div key={t.id}>
+                      <p className="text-xs font-bold text-slate-700">
+                        {t.name}
+                        <span className="ml-2 font-normal text-slate-500">{t.language}</span>
+                      </p>
+                      <pre className="mt-1.5 max-h-64 overflow-auto rounded-lg border border-slate-200 bg-white p-3 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap break-words">
+                        {t.sourceCode || '(empty)'}
+                      </pre>
                     </div>
-                  )}
-                </details>
-              ))}
-            </div>
-          )}
+                  ))}
+                </div>
+              )}
+            </details>
+          ))}
         </div>
       )}
     </div>
@@ -409,10 +336,10 @@ function ParticipantActionsPanel({
   onInternshipAccess: (finale: AdminFinaleResponse, open: boolean) => void
 }) {
   return (
-    <div className="border-t border-slate-100 pt-4 flex flex-wrap items-start gap-8">
-      <div>
+    <>
+      <div className={tileCls}>
         <p className="text-xs font-bold text-slate-700">Load your templates</p>
-        <p className="text-xs text-slate-500 mt-1 max-w-xs">
+        <p className="text-xs text-slate-500 mt-1 flex-1">
           {finale.templatesOpen
             ? 'Seated participants can open the template editor.'
             : 'The button is locked for participants.'}
@@ -425,9 +352,9 @@ function ParticipantActionsPanel({
         />
       </div>
 
-      <div>
+      <div className={tileCls}>
         <p className="text-xs font-bold text-slate-700">Apply for the internship</p>
-        <p className="text-xs text-slate-500 mt-1 max-w-xs">
+        <p className="text-xs text-slate-500 mt-1 flex-1">
           {finale.internshipOpen
             ? 'Seated participants can submit the application form.'
             : 'The button is locked for participants.'}
@@ -439,7 +366,7 @@ function ParticipantActionsPanel({
           onToggle={open => onInternshipAccess(finale, open)}
         />
       </div>
-    </div>
+    </>
   )
 }
 
@@ -466,9 +393,9 @@ function DurationControl({
   }
 
   return (
-    <div>
+    <div className={tileCls}>
       <p className="text-xs font-bold text-slate-700">Round length</p>
-      <p className="text-xs text-slate-500 mt-1 max-w-sm">
+      <p className="text-xs text-slate-500 mt-1 flex-1">
         {editable
           ? 'How long the round runs once you start it.'
           : 'Only a finale that has not started can be re-timed. Reset to draft to change it.'}
@@ -537,10 +464,10 @@ function TemplateWindowPanel({
   }
 
   return (
-    <div className="border-t border-slate-100 pt-4 flex flex-wrap items-end gap-6">
-      <div>
+    <>
+      <div className={tileCls}>
         <p className="text-xs font-bold text-slate-700">Template window</p>
-        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+        <p className="text-xs text-slate-500 mt-1 flex-1">
           {locked
             ? 'Participants can read their templates but cannot edit them.'
             : 'Participants can still add and edit templates.'}
@@ -557,9 +484,9 @@ function TemplateWindowPanel({
         </button>
       </div>
 
-      <div>
+      <div className={tileCls}>
         <p className="text-xs font-bold text-slate-700">Entry to the contest</p>
-        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+        <p className="text-xs text-slate-500 mt-1 flex-1">
           {finale.entryOpen
             ? 'Participants can open the contest screen. Problems stay sealed until you start.'
             : 'The Enter contest button is locked for participants.'}
@@ -578,20 +505,20 @@ function TemplateWindowPanel({
 
       <DurationControl finale={finale} onDuration={onDuration} />
 
-      <div>
+      <div className={tileCls}>
         <label htmlFor={`schedule-${finale.weekId}`} className="text-xs font-bold text-slate-700">
           Scheduled start
         </label>
-        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+        <p className="text-xs text-slate-500 mt-1 flex-1">
           Shown to participants as a countdown. You still press Start to open the round.
         </p>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex w-full items-center gap-2">
           <input
             id={`schedule-${finale.weekId}`}
             type="datetime-local"
             value={draft}
             onChange={e => setDraft(e.target.value)}
-            className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700"
+            className="min-w-0 flex-1 px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-slate-700"
           />
           <button
             onClick={save}
@@ -602,9 +529,17 @@ function TemplateWindowPanel({
           </button>
         </div>
       </div>
-    </div>
+    </>
   )
 }
+
+type Tab = 'participants' | 'submissions' | 'templates'
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'participants', label: 'Participants' },
+  { key: 'submissions', label: 'Submissions' },
+  { key: 'templates', label: 'Templates' },
+]
 
 function FinaleCard({
   finale, onStart, onPause, onResume, onEnd, onToggleLock, onSchedule, onReset, onToggleEntry,
@@ -623,9 +558,50 @@ function FinaleCard({
   onTemplatesAccess: (finale: AdminFinaleResponse, open: boolean) => void
   onInternshipAccess: (finale: AdminFinaleResponse, open: boolean) => void
 }) {
-  const [participantIds, setParticipantIds] = useState<number[]>([])
+  const restricted = finale.accessMode === 'RESTRICTED'
+  const { grants, loading: grantsLoading, error: grantsError, reload: reloadGrants } = useAccessGrants(finale.weekId, restricted)
+  const [tab, setTab] = useState<Tab>('participants')
   const [focus, setFocus] = useState<SubmissionsFocus | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [pendingUserId, setPendingUserId] = useState<number | null>(null)
+  const [grantError, setGrantError] = useState<string | null>(null)
+  const [userNameCache, setUserNameCache] = useState<Record<number, string>>({})
+  const participantIds = useMemo(() => grants.map(g => g.userId), [grants])
   const names = useUserNames(participantIds)
+  const grantedIds = new Set(participantIds)
+  const seats: Seat[] | undefined = restricted
+    ? grants.map(g => ({
+        userId: g.userId,
+        name: names[g.userId]?.name ?? userNameCache[g.userId],
+        username: names[g.userId]?.username,
+      }))
+    : undefined
+
+  async function handleGrant(userId: number) {
+    setPendingUserId(userId)
+    setGrantError(null)
+    try {
+      await grantAccess(finale.weekId, userId)
+      await reloadGrants()
+    } catch (e) {
+      setGrantError(e instanceof Error ? e.message : 'Could not grant access.')
+    } finally {
+      setPendingUserId(null)
+    }
+  }
+
+  async function handleRevoke(userId: number) {
+    setPendingUserId(userId)
+    setGrantError(null)
+    try {
+      await revokeAccess(finale.weekId, userId)
+      await reloadGrants()
+    } catch (e) {
+      setGrantError(e instanceof Error ? e.message : 'Could not revoke access.')
+    } finally {
+      setPendingUserId(null)
+    }
+  }
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-4">
@@ -725,39 +701,119 @@ function FinaleCard({
         </div>
       </div>
 
-      <TemplateWindowPanel
-        finale={finale}
-        onToggleLock={onToggleLock}
-        onSchedule={onSchedule}
-        onToggleEntry={onToggleEntry}
-        onDuration={onDuration}
-      />
+      <section aria-label="Round setup" className="border-t border-slate-100 pt-4">
+        <h4 className="text-sm font-bold text-slate-900 mb-3">Round setup</h4>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <TemplateWindowPanel
+            finale={finale}
+            onToggleLock={onToggleLock}
+            onSchedule={onSchedule}
+            onToggleEntry={onToggleEntry}
+            onDuration={onDuration}
+          />
+          <ParticipantActionsPanel
+            finale={finale}
+            onTemplatesAccess={onTemplatesAccess}
+            onInternshipAccess={onInternshipAccess}
+          />
+        </div>
+      </section>
 
-      <ParticipantActionsPanel
-        finale={finale}
-        onTemplatesAccess={onTemplatesAccess}
-        onInternshipAccess={onInternshipAccess}
-      />
+      <section className="border-t border-slate-100 pt-2">
+        <div role="tablist" aria-label="Finale review" className="flex gap-1 overflow-x-auto border-b border-slate-200">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => setTab(t.key)}
+              className={`shrink-0 -mb-px px-3 py-2.5 text-sm font-semibold border-b-2 ${
+                tab === t.key
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {t.label}
+              {t.key === 'participants' && restricted && (
+                <span className="ml-1.5 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                  {grants.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
 
-      <FinaleProctoringPanel weekId={finale.weekId} />
+        <div role="tabpanel" className="pt-4">
+          {tab === 'participants' && (
+            <>
+              {(grantsError || grantError) && (
+                <p role="alert" className="text-xs text-rose-600 mb-3">{grantError ?? grantsError}</p>
+              )}
+              {searching && (
+                <GrantSearch
+                  grantedIds={grantedIds}
+                  pendingUserId={pendingUserId}
+                  onGrant={handleGrant}
+                  onNames={found => setUserNameCache(prev => ({ ...prev, ...found }))}
+                  onClose={() => setSearching(false)}
+                />
+              )}
+              <FinaleProctoringPanel
+                weekId={finale.weekId}
+                seats={grantsLoading && grants.length === 0 ? undefined : seats}
+                refreshKey={grants.length}
+                toolbar={
+                  restricted && (
+                    <button
+                      onClick={() => {
+                        setSearching(open => !open)
+                        setGrantError(null)
+                      }}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-white"
+                    >
+                      Grant access
+                    </button>
+                  )
+                }
+                rowActions={p => (
+                  <>
+                    <button
+                      onClick={() => {
+                        setFocus({ userId: p.userId, nonce: Date.now() })
+                        setTab('submissions')
+                      }}
+                      className="px-2.5 py-1 text-xs font-bold rounded-md border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white"
+                    >
+                      Submissions
+                    </button>
+                    {restricted && (
+                      <button
+                        onClick={() => handleRevoke(p.userId)}
+                        disabled={pendingUserId === p.userId}
+                        className="px-2.5 py-1 text-xs font-bold rounded-md text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </>
+                )}
+              />
+            </>
+          )}
 
-      <ParticipantTemplatesPanel finale={finale} names={names} />
+          {tab === 'submissions' && (
+            <FinaleSubmissionsPanel
+              weekId={finale.weekId}
+              participants={participantIds}
+              names={names}
+              focus={focus}
+              embedded
+            />
+          )}
 
-      <FinaleSubmissionsPanel
-        weekId={finale.weekId}
-        participants={participantIds}
-        names={names}
-        focus={focus}
-      />
-
-      {finale.accessMode === 'RESTRICTED' && (
-        <AccessGrantsPanel
-          finale={finale}
-          names={names}
-          onGrantsChange={setParticipantIds}
-          onShowSubmissions={userId => setFocus({ userId, nonce: Date.now() })}
-        />
-      )}
+          {tab === 'templates' && <ParticipantTemplatesPanel finale={finale} names={names} />}
+        </div>
+      </section>
     </div>
   )
 }

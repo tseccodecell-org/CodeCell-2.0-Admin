@@ -32,13 +32,15 @@ export default function FinaleSubmissionsPanel({
   participants,
   names,
   focus,
+  embedded = false,
 }: {
   weekId: string
   participants: number[]
   names: Record<number, UserLabel>
   focus: SubmissionsFocus | null
+  embedded?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(embedded)
   const [userId, setUserId] = useState<number | 'all'>('all')
   const [verdict, setVerdict] = useState<VerdictFilter>('all')
   const [rows, setRows] = useState<AdminSubmissionRow[]>([])
@@ -87,8 +89,8 @@ export default function FinaleSubmissionsPanel({
     setUserId(focus.userId)
     setVerdict('all')
     setOpen(true)
-    rootRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
-  }, [focus])
+    if (!embedded) rootRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  }, [focus, embedded])
 
   async function toggleOpen(rowId: string) {
     if (openId === rowId) {
@@ -136,10 +138,13 @@ export default function FinaleSubmissionsPanel({
   const invalidatedCount = rows.filter(r => r.invalidated).length
 
   return (
-    <div ref={rootRef} className="border-t border-slate-100 pt-4 scroll-mt-4">
+    <div ref={rootRef} className={embedded ? '' : 'border-t border-slate-100 pt-4 scroll-mt-4'}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button onClick={() => setOpen(o => !o)} className="text-xs font-bold text-slate-700 hover:text-slate-900">
-          {open ? 'Hide' : 'Review'} submissions
+        <button
+          onClick={() => { if (!embedded) setOpen(o => !o) }}
+          className={`text-xs font-bold text-slate-700 ${embedded ? 'cursor-default' : 'hover:text-slate-900'}`}
+        >
+          {embedded ? 'Submissions' : `${open ? 'Hide' : 'Review'} submissions`}
           {open && !loading && (
             <span className="font-normal text-slate-500">
               {' '}
@@ -150,13 +155,13 @@ export default function FinaleSubmissionsPanel({
         </button>
 
         {open && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <label className="sr-only" htmlFor={`sub-user-${weekId}`}>Participant</label>
             <select
               id={`sub-user-${weekId}`}
               value={userId}
               onChange={e => setUserId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-700"
+              className="min-w-0 flex-1 sm:flex-none px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-700"
             >
               <option value="all">All participants</option>
               {participants.map(id => (
