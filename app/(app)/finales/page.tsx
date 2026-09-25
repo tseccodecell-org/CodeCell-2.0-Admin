@@ -7,6 +7,7 @@ import { listUsers, type AdminUserRow } from '@/lib/moderation'
 import { useUserNames, type UserLabel } from '@/lib/useUserNames'
 import FinaleSubmissionsPanel, { type SubmissionsFocus } from '@/components/FinaleSubmissionsPanel'
 import FinaleProctoringPanel, { type Seat } from '@/components/FinaleProctoringPanel'
+import FinaleStandingsModal from '@/components/FinaleStandingsModal'
 import {
   createFinale,
   endFinale,
@@ -561,6 +562,7 @@ function FinaleCard({
   const restricted = finale.accessMode === 'RESTRICTED'
   const { grants, loading: grantsLoading, error: grantsError, reload: reloadGrants } = useAccessGrants(finale.weekId, restricted)
   const [tab, setTab] = useState<Tab>('participants')
+  const [showStandings, setShowStandings] = useState(false)
   const [focus, setFocus] = useState<SubmissionsFocus | null>(null)
   const [searching, setSearching] = useState(false)
   const [pendingUserId, setPendingUserId] = useState<number | null>(null)
@@ -576,6 +578,8 @@ function FinaleCard({
         username: names[g.userId]?.username,
       }))
     : undefined
+
+  const closeStandings = useCallback(() => setShowStandings(false), [])
 
   async function handleGrant(userId: number) {
     setPendingUserId(userId)
@@ -643,6 +647,13 @@ function FinaleCard({
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowStandings(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+          >
+            {finale.state === 'LIVE' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+            Live standings
+          </button>
           <Link
             href={`/challenges/${finale.weekId}`}
             className="px-3 py-1.5 text-xs font-bold border border-slate-200 rounded-lg text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -814,6 +825,10 @@ function FinaleCard({
           {tab === 'templates' && <ParticipantTemplatesPanel finale={finale} names={names} />}
         </div>
       </section>
+
+      {showStandings && (
+        <FinaleStandingsModal weekId={finale.weekId} title={finale.title} onClose={closeStandings} />
+      )}
     </div>
   )
 }

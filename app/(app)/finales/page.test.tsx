@@ -40,6 +40,7 @@ vi.mock('@/lib/finales', () => ({
   lockParticipant: vi.fn(),
   unlockParticipant: vi.fn(),
   setStrikeLimit: vi.fn(),
+  getAdminStandings: vi.fn(() => Promise.resolve({ problems: [], rows: [] })),
 }))
 
 vi.mock('@/lib/moderation', () => ({
@@ -284,6 +285,18 @@ describe('FinalesPage', () => {
     await user.type(screen.getByPlaceholderText(/search participants/i), 'ada')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Session expired.')
+  })
+
+  it('opens the live standings popup from the finale card', async () => {
+    vi.mocked(listFinales).mockResolvedValue([makeFinale({ weekId: 'week-board', state: 'LIVE' })])
+    const user = userEvent.setup()
+
+    render(createElement(FinalesPage))
+    await user.click(await screen.findByRole('button', { name: 'Live standings' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Live standings' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Close standings' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('does not render grant access controls for an open finale', async () => {

@@ -181,3 +181,39 @@ export function unlockParticipant(weekId: string, userId: number) {
 export function setStrikeLimit(weekId: string, strikeLimit: number) {
   return call<ProctorView>('PUT', `/api/admin/finales/${weekId}/strike-limit`, { strikeLimit })
 }
+
+export interface StandingsProblem {
+  id: string
+  label: string
+  title?: string
+  points: number
+}
+
+export interface StandingsCell {
+  problemId: string
+  solved: boolean
+  points: number
+  solvedAtSeconds?: number
+  wrongAttempts: number
+  pending: boolean
+}
+
+export interface StandingsRow {
+  rank: number
+  userId: number
+  name: string
+  username?: string
+  score: number
+  solved: number
+  penaltySeconds: number
+  cells: StandingsCell[] | null
+}
+
+export interface Standings {
+  problems: StandingsProblem[] | null
+  rows: StandingsRow[] | null
+}
+
+export function getAdminStandings(weekId: string) {
+  return call<Standings>('GET', `/api/admin/finales/${weekId}/standings`)
+}
