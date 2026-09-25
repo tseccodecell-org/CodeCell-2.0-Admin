@@ -36,6 +36,10 @@ vi.mock('@/lib/finales', () => ({
   listAccessGrants: vi.fn(),
   grantAccess: vi.fn(),
   revokeAccess: vi.fn(),
+  getProctorView: vi.fn(() => Promise.resolve({ strikeLimit: 3, participants: [] })),
+  lockParticipant: vi.fn(),
+  unlockParticipant: vi.fn(),
+  setStrikeLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/moderation', () => ({

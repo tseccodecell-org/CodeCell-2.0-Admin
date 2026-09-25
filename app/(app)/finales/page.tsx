@@ -6,6 +6,7 @@ import ConfirmModal, { type ConfirmRequest } from '@/components/ConfirmModal'
 import { listUsers, type AdminUserRow } from '@/lib/moderation'
 import { useUserNames, type UserLabel } from '@/lib/useUserNames'
 import FinaleSubmissionsPanel, { type SubmissionsFocus } from '@/components/FinaleSubmissionsPanel'
+import FinaleProctoringPanel from '@/components/FinaleProctoringPanel'
 import {
   createFinale,
   endFinale,
@@ -737,6 +738,8 @@ function FinaleCard({
         onTemplatesAccess={onTemplatesAccess}
         onInternshipAccess={onInternshipAccess}
       />
+
+      <FinaleProctoringPanel weekId={finale.weekId} />
 
       <ParticipantTemplatesPanel finale={finale} names={names} />
 
